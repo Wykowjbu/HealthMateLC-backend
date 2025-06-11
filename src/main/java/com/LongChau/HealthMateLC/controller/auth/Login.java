@@ -37,7 +37,7 @@ public class Login {
                     && user.getUsername().equals(loginRequest.getUsername())){
                 responce.put("success",true);
                 responce.put("message","Đăng nhập thành công!");
-                responce.put("redirectUrl","http://127.0.0.1:5500/welcome/welcome.html");
+                responce.put("redirectUrl","https://wykowjbu.github.io/DemoLogin/welcome");
 
                 return ResponseEntity.ok(responce);
             } else {
