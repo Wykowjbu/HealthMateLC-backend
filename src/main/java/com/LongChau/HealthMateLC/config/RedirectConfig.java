@@ -16,6 +16,9 @@ public class RedirectConfig {
     @Value("${app.redirect-urls.pharmacist}")
     private String pharmacistUrl;
 
+    @Value("${app.redirect-urls.customerservice}")
+    private String customerserviceUrl;
+
     @Value("${app.redirect-urls.default}")
     private String defaultUrl;
 
@@ -24,6 +27,7 @@ public class RedirectConfig {
             case "admin" -> adminUrl;
             case "manager" -> managerUrl;
             case "pharmacist" -> pharmacistUrl;
+            case "customer service" -> customerserviceUrl;
             default -> defaultUrl;
         };
     }
