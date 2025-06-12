@@ -1,5 +1,6 @@
 package com.LongChau.HealthMateLC.controller.auth;
 
+import com.LongChau.HealthMateLC.config.RedirectConfig;
 import com.LongChau.HealthMateLC.model.User;
 import com.LongChau.HealthMateLC.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,8 @@ import java.util.Map;
 @RestController
 
 public class Login {
+    @Autowired
+    private RedirectConfig redirectConfig;
 
     @Autowired
     private UserRepository userRepository;
@@ -35,9 +38,11 @@ public class Login {
             if (user !=null
                     && user.getPassword().equals(loginRequest.getPassword())
                     && user.getUsername().equals(loginRequest.getUsername())){
+
+                responce.put("redirectUrl",redirectConfig.getRedirectUrl(user.getRole()));
                 responce.put("success",true);
                 responce.put("message","Đăng nhập thành công!");
-                responce.put("redirectUrl","https://wykowjbu.github.io/DemoLogin/welcome");
+
 
                 return ResponseEntity.ok(responce);
             } else {
