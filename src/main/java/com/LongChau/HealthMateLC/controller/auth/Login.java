@@ -3,6 +3,7 @@ package com.LongChau.HealthMateLC.controller.auth;
 import com.LongChau.HealthMateLC.config.RedirectConfig;
 import com.LongChau.HealthMateLC.model.User;
 import com.LongChau.HealthMateLC.repository.UserRepository;
+import com.LongChau.HealthMateLC.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -22,19 +23,18 @@ public class Login {
     private RedirectConfig redirectConfig;
 
     @Autowired
-    private UserRepository userRepository;
+    private UserService userService;
 
     @GetMapping
     private List<User> getAllUsers(){
-        return userRepository.findAll();
+        return userService.getAllUser();
     }
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody User loginRequest){
         Map<String,Object> responce = new HashMap<>();
-
         try {
-            User user=userRepository.findByUsername(loginRequest.getUsername());
+            User user=userService.findUserByUsername(loginRequest.getUsername());
             if (user !=null
                     && user.getPassword().equals(loginRequest.getPassword())
                     && user.getUsername().equals(loginRequest.getUsername())){

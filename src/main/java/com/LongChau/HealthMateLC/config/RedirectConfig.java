@@ -13,8 +13,8 @@ public class RedirectConfig {
     @Value("${app.redirect-urls.manager}")
     private String managerUrl;
 
-    @Value("${app.redirect-urls.pharmacist}")
-    private String pharmacistUrl;
+    @Value("${app.redirect-urls.employee}")
+    private String employeeUrl;
 
     @Value("${app.redirect-urls.customerservice}")
     private String customerserviceUrl;
@@ -26,8 +26,8 @@ public class RedirectConfig {
         return switch (role.toLowerCase()) {
             case "admin" -> adminUrl;
             case "manager" -> managerUrl;
-            case "pharmacist" -> pharmacistUrl;
-            case "customer service" -> customerserviceUrl;
+            case "employee" -> employeeUrl;
+            case "customer-service" -> customerserviceUrl;
             default -> defaultUrl;
         };
     }
