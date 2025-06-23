@@ -3,15 +3,11 @@ package com.LongChau.HealthMateLC.controller.auth;
 import com.LongChau.HealthMateLC.config.RedirectConfig;
 import com.LongChau.HealthMateLC.model.User;
 import com.LongChau.HealthMateLC.repository.UserRepository;
-import com.LongChau.HealthMateLC.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,41 +16,62 @@ import java.util.Map;
 
 public class Login {
     @Autowired
-    private RedirectConfig redirectConfig;
+    private UserRepository userRepository;
 
     @Autowired
-    private UserService userService;
-
-    @GetMapping
-    private List<User> getAllUsers(){
-        return userService.getAllUser();
-    }
+    private RedirectConfig redirectConfig;
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody User loginRequest){
-        Map<String,Object> responce = new HashMap<>();
+    public ResponseEntity<Map<String, Object>> login(@RequestBody User loginRequest, HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
         try {
-            User user=userService.findUserByUsername(loginRequest.getUsername());
-            if (user !=null
+            User user = userRepository.findUserByUsername(loginRequest.getUsername());
+            if (user != null
                     && user.getPassword().equals(loginRequest.getPassword())
-                    && user.getUsername().equals(loginRequest.getUsername())){
+                    && user.getUsername().equals(loginRequest.getUsername())) {
 
-                responce.put("redirectUrl",redirectConfig.getRedirectUrl(user.getRole()));
-                responce.put("success",true);
-                responce.put("message","Đăng nhập thành công!");
+                System.out.println("DEBUG: Setting session for user: " + user.getUsername());
+                System.out.println("DEBUG: Session ID before setting: " + session.getId());
 
+                // Chuẩn hóa role thành chữ thường
+                String normalizedRole = user.getRole().toLowerCase();
 
-                return ResponseEntity.ok(responce);
+                // Set session attributes
+                session.setAttribute("currentUser", user);
+                session.setAttribute("userRole", normalizedRole);
+                session.setAttribute("userId", user.getUserId());
+
+                // Set session timeout
+                session.setMaxInactiveInterval(30 * 60); // 30 minutes
+
+                System.out.println("DEBUG: Session attributes after setting:");
+                System.out.println("DEBUG: currentUser: " + session.getAttribute("currentUser"));
+                System.out.println("DEBUG: userRole: " + session.getAttribute("userRole"));
+                System.out.println("DEBUG: userId: " + session.getAttribute("userId"));
+
+                // Lấy redirect URL
+                String redirectUrl = redirectConfig.getRedirectUrl(normalizedRole);
+                System.out.println("DEBUG: Redirect URL: " + redirectUrl);
+
+                response.put("redirectUrl", redirectUrl);
+                response.put("success", true);
+                response.put("message", "Đăng nhập thành công!");
+                response.put("role", normalizedRole);
+                response.put("sessionId", session.getId());
+
+                return ResponseEntity.ok()
+                        .header("Set-Cookie", "JSESSIONID=" + session.getId() + "; Path=/; HttpOnly; SameSite=Lax; Domain=localhost")
+                        .body(response);
             } else {
-                responce.put("success",false);
-            responce.put("message","Tên Đăng Nhập Hoặc Mật Khẩu Không Chính Xác! ");
-                return ResponseEntity.badRequest().body(responce);
+                response.put("success", false);
+                response.put("message", "Tên Đăng Nhập Hoặc Mật Khẩu Không Chính Xác!");
+                return ResponseEntity.badRequest().body(response);
             }
         } catch (Exception e) {
-            System.err.println("Login error "+e.getMessage());
-            responce.put("success",false);
-            responce.put("message","Có Lỗi Xảy Ra "+e.getMessage());
-            return  ResponseEntity.internalServerError().body(responce);
+            System.err.println("Login error: " + e.getMessage());
+            response.put("success", false);
+            response.put("message", "Có Lỗi Xảy Ra: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
         }
     }
 }
