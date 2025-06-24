@@ -11,7 +11,7 @@ import java.util.List;
 public interface FeedbackRepository extends JpaRepository<Feedback, Integer> {
     @Query("SELECT AVG(f.rating) FROM Feedback f WHERE f.pharmacy.pharmacyId = :pharmacyId")
     Double getAverageRatingByPharmacy(@Param("pharmacyId") Integer pharmacyId);
-    
+
     @Query("SELECT f FROM Feedback f WHERE f.rating <= :maxRating ORDER BY f.feedbackDate DESC")
     List<Feedback> findLowRatingFeedbacks(@Param("maxRating") Integer maxRating);
 }

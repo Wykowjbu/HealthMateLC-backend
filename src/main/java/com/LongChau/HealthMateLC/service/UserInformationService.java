@@ -1,6 +1,7 @@
 package com.LongChau.HealthMateLC.service;
 
 import com.LongChau.HealthMateLC.dto.UserInformationDTO;
+import com.LongChau.HealthMateLC.model.UserInformation;
 import com.LongChau.HealthMateLC.repository.UserInformationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,5 +20,9 @@ public class UserInformationService {
 
     public List<UserInformationDTO> getEmployeeAndManagerByPharmacyId(int pharmacyId) {
         return userInformationRepository.findEmployeeAndManagerByPharmacyId(pharmacyId);
+    }
+
+    public UserInformation findUserInformationByUserId(Integer userId) {
+        return userInformationRepository.findById(userId).orElse(null);
     }
 }
