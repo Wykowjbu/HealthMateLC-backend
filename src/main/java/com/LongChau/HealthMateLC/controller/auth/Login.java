@@ -3,39 +3,23 @@ package com.LongChau.HealthMateLC.controller.auth;
 import com.LongChau.HealthMateLC.config.RedirectConfig;
 import com.LongChau.HealthMateLC.model.User;
 import com.LongChau.HealthMateLC.repository.UserRepository;
-<<<<<<< HEAD
-import com.LongChau.HealthMateLC.model.UserInformation;
-import com.LongChau.HealthMateLC.service.UserInformationService;
-import com.LongChau.HealthMateLC.model.Pharmacy;
-=======
->>>>>>> 624f54cafb8648bd54f423ecbdb24c097d9621a6
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpSession;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Collections;
 
 @RestController
 public class Login {
     @Autowired
     private UserRepository userRepository;
-<<<<<<< HEAD
-
-    @Autowired
-    private UserInformationService userInformationService;
 
     @Autowired
     private RedirectConfig redirectConfig;
 
-=======
-
-    @Autowired
-    private RedirectConfig redirectConfig;
-
->>>>>>> 624f54cafb8648bd54f423ecbdb24c097d9621a6
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody User loginRequest, HttpSession session) {
         Map<String, Object> response = new HashMap<>();
@@ -48,35 +32,23 @@ public class Login {
                 System.out.println("DEBUG: Setting session for user: " + user.getUsername());
                 System.out.println("DEBUG: Session ID before setting: " + session.getId());
 
-<<<<<<< HEAD
-                String normalizedRole = user.getRole().toLowerCase();
-
-=======
                 // Chuẩn hóa role thành chữ thường
                 String normalizedRole = user.getRole().toLowerCase();
 
                 // Set session attributes
->>>>>>> 624f54cafb8648bd54f423ecbdb24c097d9621a6
                 session.setAttribute("currentUser", user);
                 session.setAttribute("userRole", normalizedRole);
                 session.setAttribute("userId", user.getUserId());
 
-<<<<<<< HEAD
-                session.setMaxInactiveInterval(30 * 60);
-=======
                 // Set session timeout
                 session.setMaxInactiveInterval(30 * 60); // 30 minutes
->>>>>>> 624f54cafb8648bd54f423ecbdb24c097d9621a6
 
                 System.out.println("DEBUG: Session attributes after setting:");
                 System.out.println("DEBUG: currentUser: " + session.getAttribute("currentUser"));
                 System.out.println("DEBUG: userRole: " + session.getAttribute("userRole"));
                 System.out.println("DEBUG: userId: " + session.getAttribute("userId"));
 
-<<<<<<< HEAD
-=======
                 // Lấy redirect URL
->>>>>>> 624f54cafb8648bd54f423ecbdb24c097d9621a6
                 String redirectUrl = redirectConfig.getRedirectUrl(normalizedRole);
                 System.out.println("DEBUG: Redirect URL: " + redirectUrl);
 
@@ -101,7 +73,6 @@ public class Login {
             return ResponseEntity.internalServerError().body(response);
         }
     }
-<<<<<<< HEAD
 
     @PostMapping("/logout")
     public ResponseEntity<Map<String, Object>> logout(HttpSession session) {
@@ -109,11 +80,14 @@ public class Login {
         try {
             System.out.println("DEBUG: Attempting logout. Session ID: " + session.getId());
 
+            // Kiểm tra xem session có tồn tại không
             if (session != null) {
+                // Xóa các thuộc tính session
                 session.removeAttribute("currentUser");
                 session.removeAttribute("userRole");
                 session.removeAttribute("userId");
 
+                // Hủy phiên
                 session.invalidate();
 
                 System.out.println("DEBUG: Session invalidated successfully.");
@@ -121,7 +95,7 @@ public class Login {
 
             response.put("success", true);
             response.put("message", "Đăng xuất thành công!");
-            response.put("redirectUrl", "/HealthMateLC/index.html");
+            response.put("redirectUrl", "/index.html"); // Chuyển hướng về trang đăng nhập
 
             return ResponseEntity.ok()
                     .header("Set-Cookie", "JSESSIONID=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Domain=localhost")
@@ -133,6 +107,4 @@ public class Login {
             return ResponseEntity.internalServerError().body(response);
         }
     }
-=======
->>>>>>> 624f54cafb8648bd54f423ecbdb24c097d9621a6
 }
