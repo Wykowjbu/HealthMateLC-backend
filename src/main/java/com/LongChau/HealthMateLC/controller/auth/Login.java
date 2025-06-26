@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-
 public class Login {
     @Autowired
     private UserRepository userRepository;
@@ -71,6 +70,40 @@ public class Login {
             System.err.println("Login error: " + e.getMessage());
             response.put("success", false);
             response.put("message", "Có Lỗi Xảy Ra: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, Object>> logout(HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            System.out.println("DEBUG: Attempting logout. Session ID: " + session.getId());
+
+            // Kiểm tra xem session có tồn tại không
+            if (session != null) {
+                // Xóa các thuộc tính session
+                session.removeAttribute("currentUser");
+                session.removeAttribute("userRole");
+                session.removeAttribute("userId");
+
+                // Hủy phiên
+                session.invalidate();
+
+                System.out.println("DEBUG: Session invalidated successfully.");
+            }
+
+            response.put("success", true);
+            response.put("message", "Đăng xuất thành công!");
+            response.put("redirectUrl", "/index.html"); // Chuyển hướng về trang đăng nhập
+
+            return ResponseEntity.ok()
+                    .header("Set-Cookie", "JSESSIONID=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Domain=localhost")
+                    .body(response);
+        } catch (Exception e) {
+            System.err.println("Logout error: " + e.getMessage());
+            response.put("success", false);
+            response.put("message", "Có Lỗi Xảy Ra Khi Đăng Xuất: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
     }
