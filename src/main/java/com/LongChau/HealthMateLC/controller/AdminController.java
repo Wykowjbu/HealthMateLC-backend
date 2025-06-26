@@ -2,6 +2,7 @@ package com.LongChau.HealthMateLC.controller;
 
 import com.LongChau.HealthMateLC.dto.UserInformationDTO;
 import com.LongChau.HealthMateLC.model.Pharmacy;
+import com.LongChau.HealthMateLC.model.User;
 import com.LongChau.HealthMateLC.service.CustomerService;
 import com.LongChau.HealthMateLC.service.PharmacyService;
 import com.LongChau.HealthMateLC.service.UserInformationService;
@@ -50,6 +51,15 @@ public class AdminController {
         });
         map.put("listUsersByPharmacy", map1);
         return new ResponseEntity<>(map, HttpStatus.OK);
+    }
+
+    @PutMapping("/update-account/{userId}")
+    public ResponseEntity<UserInformationDTO> updateUserInformation(@RequestBody UserInformationDTO userInformationDTO, @PathVariable Integer userId) {
+        UserInformationDTO userInformationDtoResult = userService.updateUserAndUserInformation(userInformationDTO, userId);
+        if (userInformationDtoResult != null) {
+            return new ResponseEntity<>(userInformationDtoResult, HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
 
