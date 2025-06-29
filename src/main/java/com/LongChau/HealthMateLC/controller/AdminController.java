@@ -2,18 +2,25 @@ package com.LongChau.HealthMateLC.controller;
 
 import com.LongChau.HealthMateLC.dto.UserInformationDTO;
 import com.LongChau.HealthMateLC.dto.UserDTO;
+import com.LongChau.HealthMateLC.dto.ProductDTO;
 import com.LongChau.HealthMateLC.model.Pharmacy;
 import com.LongChau.HealthMateLC.model.UserInformation;
 import com.LongChau.HealthMateLC.model.User;
+import com.LongChau.HealthMateLC.model.Product;
 import com.LongChau.HealthMateLC.service.CustomerService;
 import com.LongChau.HealthMateLC.service.PharmacyService;
 import com.LongChau.HealthMateLC.service.UserInformationService;
 import com.LongChau.HealthMateLC.service.UserService;
+import com.LongChau.HealthMateLC.service.ProductService;
+import com.LongChau.HealthMateLC.repository.ProductRepository;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 @RestController
@@ -29,6 +36,10 @@ public class AdminController {
     private PharmacyService pharmacyService;
     @Autowired
     private UserInformationService userInformationService;
+    @Autowired
+    private ProductService productService;
+    @Autowired
+    private ProductRepository productRepository;
 
     @GetMapping("/list-accounts")
     public ResponseEntity<Map<String, Object>> listAccounts() {
@@ -64,46 +75,19 @@ public class AdminController {
     }
 
     @PostMapping("/add-account")
-    public ResponseEntity<Map<String, String>> addAccount(@RequestBody UserDTO userDTO) {
+    public ResponseEntity<Map<String, String>> addAccount(@Valid @RequestBody UserDTO userDTO, BindingResult bindingResult) {
         Map<String, String> response = new HashMap<>();
 
-        // Validate input
-        if (userDTO.getUsername() == null || userDTO.getUsername().trim().isEmpty()) {
-            response.put("message", "Tên đăng nhập không được để trống");
+        // Check validation errors from Bean Validation
+        if (bindingResult.hasErrors()) {
+            String errorMessage = bindingResult.getFieldErrors().get(0).getDefaultMessage();
+            response.put("message", errorMessage);
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
+
+        // Business logic validation
         if (userService.existsByUsername(userDTO.getUsername())) {
             response.put("message", "Tên đăng nhập đã tồn tại");
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-        if (userDTO.getPassword() == null || userDTO.getPassword().trim().isEmpty()) {
-            response.put("message", "Mật khẩu không được để trống");
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-        if (userDTO.getPassword().length() < 6) {
-            response.put("message", "Mật khẩu phải có ít nhất 6 ký tự");
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-        if (userDTO.getFullName() == null || userDTO.getFullName().trim().isEmpty()) {
-            response.put("message", "Họ và tên không được để trống");
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-        if (userDTO.getEmail() != null && !userDTO.getEmail().isEmpty()) {
-            String emailRegex = "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$";
-            if (!userDTO.getEmail().matches(emailRegex)) {
-                response.put("message", "Email không đúng định dạng");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-            }
-        }
-        if (userDTO.getPhone() != null && !userDTO.getPhone().isEmpty()) {
-            String phoneRegex = "^0\\d{9}$";
-            if (!userDTO.getPhone().matches(phoneRegex)) {
-                response.put("message", "Số điện thoại phải bắt đầu bằng 0 và có 10 chữ số");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-            }
-        }
-        if (userDTO.getRole() == null || userDTO.getRole().trim().isEmpty()) {
-            response.put("message", "Vai trò không được để trống");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
         if (!userService.getDistinctRoles().contains(userDTO.getRole().toLowerCase())) {
@@ -119,7 +103,7 @@ public class AdminController {
             // Create user
             UserDTO userToSave = new UserDTO(
                     userDTO.getUsername(),
-                    userDTO.getPassword(), // Store password as plain text
+                    userDTO.getPassword(),
                     userDTO.getFullName(),
                     userDTO.getPhone(),
                     userDTO.getEmail(),
@@ -136,7 +120,7 @@ public class AdminController {
                 userInformation.setFullName(userDTO.getFullName());
                 userInformation.setPhone(userDTO.getPhone());
                 userInformation.setEmail(userDTO.getEmail());
-                
+
                 // Set pharmacy if provided
                 if (userDTO.getPharmacyId() != null) {
                     Optional<Pharmacy> pharmacy = pharmacyService.findById(userDTO.getPharmacyId());
@@ -144,7 +128,7 @@ public class AdminController {
                         userInformation.setPharmacy(pharmacy.get());
                     }
                 }
-                
+
                 userInformationService.save(userInformation);
             }
 
@@ -154,5 +138,47 @@ public class AdminController {
             response.put("message", "Lỗi khi tạo tài khoản: " + e.getMessage());
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @PostMapping("/add-product")
+    public ResponseEntity<Map<String, String>> addProduct(@Valid @RequestBody ProductDTO productDTO, BindingResult bindingResult) {
+        Map<String, String> response = new HashMap<>();
+
+        // Check validation errors from Bean Validation
+        if (bindingResult.hasErrors()) {
+            String errorMessage = bindingResult.getFieldErrors().get(0).getDefaultMessage();
+            response.put("message", errorMessage);
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+
+        try {
+            // Create product using service
+            Product createdProduct = productService.createProduct(productDTO);
+
+            response.put("message", "Thêm sản phẩm thành công");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            response.put("message", e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            response.put("message", "Lỗi khi thêm sản phẩm: " + e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/list-products")
+    public ResponseEntity<List<ProductDTO>> listProducts() {
+        List<Product> products = productService.getAllProducts();
+        List<ProductDTO> dtos = new ArrayList<>();
+        for (Product p : products) {
+            ProductDTO dto = new ProductDTO();
+            dto.setProductName(p.getProductName());
+            dto.setProductType(p.getProductType());
+            dto.setUnit(p.getUnit());
+            dto.setPrice(p.getPrice());
+            dto.setDescription(p.getDescription());
+            dtos.add(dto);
+        }
+        return new ResponseEntity<>(dtos, HttpStatus.OK);
     }
 }
