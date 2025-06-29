@@ -44,4 +44,8 @@ public class Feedback {
 
     @Column(name = "HandledDate")
     private LocalDateTime handledDate;
+
+    @Column(name = "status", length = 20)
+    private String status;
+
 }
