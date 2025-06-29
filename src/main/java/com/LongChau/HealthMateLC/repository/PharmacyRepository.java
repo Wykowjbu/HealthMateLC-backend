@@ -11,4 +11,5 @@ import java.util.Optional;
 
 @Repository
 public interface PharmacyRepository extends JpaRepository<Pharmacy, Integer> {
+    boolean existsById(Integer pharmacyId);
 }

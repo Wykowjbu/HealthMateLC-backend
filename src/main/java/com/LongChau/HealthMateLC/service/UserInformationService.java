@@ -24,4 +24,7 @@ public class UserInformationService {
     public UserInformation findUserInformationByUserId(Integer userId) {
         return userInformationRepository.findById(userId).orElse(null);
     }
+    public void save(UserInformation userInformation) {
+        userInformationRepository.save(userInformation);
+    }
 }

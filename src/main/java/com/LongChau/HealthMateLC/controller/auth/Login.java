@@ -95,7 +95,7 @@ public class Login {
 
             response.put("success", true);
             response.put("message", "Đăng xuất thành công!");
-            response.put("redirectUrl", "/index.html"); // Chuyển hướng về trang đăng nhập
+            response.put("redirectUrl", "/HealthMateLC/index.html"); // Chuyển hướng về trang đăng nhập
 
             return ResponseEntity.ok()
                     .header("Set-Cookie", "JSESSIONID=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Domain=localhost")
