@@ -1,5 +1,6 @@
 package com.LongChau.HealthMateLC.controller;
 
+import com.LongChau.HealthMateLC.dto.PharmacyDTO;
 import com.LongChau.HealthMateLC.dto.UserInformationDTO;
 import com.LongChau.HealthMateLC.dto.UserDTO;
 import com.LongChau.HealthMateLC.dto.ProductDTO;
@@ -21,6 +22,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @RestController
@@ -40,6 +42,12 @@ public class AdminController {
     private ProductService productService;
     @Autowired
     private ProductRepository productRepository;
+    @Autowired
+    private com.LongChau.HealthMateLC.repository.PharmacyRepository pharmacyRepository;
+    @Autowired
+    private com.LongChau.HealthMateLC.repository.UserRepository userRepository;
+    @Autowired
+    private com.LongChau.HealthMateLC.repository.UserInformationRepository userInformationRepository;
 
     @GetMapping("/list-accounts")
     public ResponseEntity<Map<String, Object>> listAccounts() {
@@ -66,6 +74,36 @@ public class AdminController {
     public ResponseEntity<List<Pharmacy>> listPharmacies() {
         List<Pharmacy> pharmacies = pharmacyService.getAllPharmacies();
         return new ResponseEntity<>(pharmacies, HttpStatus.OK);
+    }
+
+    @GetMapping("/list-pharmacy")
+    public ResponseEntity<List<Map<String, Object>>> listPharmaciesWithManager() {
+        List<Pharmacy> pharmacies = pharmacyService.getAllPharmacies();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Pharmacy p : pharmacies) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("pharmacyId", p.getPharmacyId());
+            map.put("pharmacyName", p.getPharmacyName());
+            map.put("address", p.getAddress());
+            map.put("phone", p.getPhone());
+            map.put("email", p.getEmail());
+            map.put("isActive", p.getIsActive());
+            // Lấy tất cả manager của nhà thuốc
+            List<UserInformation> managers = userInformationService.findManagersByPharmacyId(p.getPharmacyId());
+            String managerNames = "";
+            if (managers != null && !managers.isEmpty()) {
+                List<String> names = new ArrayList<>();
+                for (UserInformation manager : managers) {
+                    String name = (manager.getFullName() != null && !manager.getFullName().isBlank())
+                        ? manager.getFullName() : manager.getUser().getUsername();
+                    names.add(name);
+                }
+                managerNames = String.join(", ", names);
+            }
+            map.put("manager", managerNames.isEmpty() ? "Chưa gán" : managerNames);
+            result.add(map);
+        }
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @GetMapping("/list-roles")
@@ -180,5 +218,22 @@ public class AdminController {
             dtos.add(dto);
         }
         return new ResponseEntity<>(dtos, HttpStatus.OK);
+    }
+
+    @PostMapping("/create-pharmacy")
+    public ResponseEntity<?> createPharmacy(@Valid @RequestBody PharmacyDTO dto, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            String errorMessage = bindingResult.getFieldErrors().get(0).getDefaultMessage();
+            return ResponseEntity.badRequest().body(Map.of("message", errorMessage));
+        }
+        Pharmacy pharmacy = new Pharmacy();
+        pharmacy.setPharmacyName(dto.getPharmacyName());
+        pharmacy.setAddress(dto.getAddress());
+        pharmacy.setPhone(dto.getPhone());
+        pharmacy.setEmail(dto.getEmail());
+        pharmacy.setIsActive(dto.getIsActive());
+        pharmacy.setCreatedDate(LocalDateTime.now());
+        pharmacyRepository.save(pharmacy);
+        return ResponseEntity.ok(Map.of("message", "Tạo nhà thuốc thành công"));
     }
 }

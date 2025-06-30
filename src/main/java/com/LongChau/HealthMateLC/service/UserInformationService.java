@@ -27,4 +27,13 @@ public class UserInformationService {
     public void save(UserInformation userInformation) {
         userInformationRepository.save(userInformation);
     }
+
+    public UserInformation findManagerByPharmacyId(Integer pharmacyId) {
+        List<UserInformation> managers = userInformationRepository.findManagersByPharmacyId(pharmacyId);
+        return managers.isEmpty() ? null : managers.get(0);
+    }
+
+    public List<UserInformation> findManagersByPharmacyId(Integer pharmacyId) {
+        return userInformationRepository.findManagersByPharmacyId(pharmacyId);
+    }
 }
