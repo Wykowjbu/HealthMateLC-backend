@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "Customers")
@@ -37,4 +38,10 @@ public class Customer {
 
     @Column(name = "CreatedDate")
     private LocalDateTime createdDate = LocalDateTime.now();
+
+    @Column(name = "Gender", length = 10)
+    private String gender;
+
+    @Column(name = "DateOfBirth")
+    private LocalDate dateOfBirth;
 }
