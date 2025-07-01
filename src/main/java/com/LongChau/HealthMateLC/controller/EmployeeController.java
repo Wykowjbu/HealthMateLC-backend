@@ -65,6 +65,7 @@ public class EmployeeController {
     public ResponseEntity<List<Product>> getAllProducts(){
         List<Product> list= productsService.getAll();
         return ResponseEntity.ok(list);
+        //phanhuy
     }
 
 
