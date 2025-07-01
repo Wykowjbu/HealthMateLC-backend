@@ -33,4 +33,16 @@ public class PharmacyService {
     public Optional<Pharmacy> findById(Integer pharmacyId) {
         return pharmacyRepository.findById(pharmacyId);
     }
+
+    public boolean existsByPharmacyName(String pharmacyName) {
+        return pharmacyRepository.existsByPharmacyName(pharmacyName);
+    }
+    public boolean existsByPhone(String phone) {
+        return pharmacyRepository.existsByPhone(phone);
+    }
+    public boolean existsByEmail(String email) {
+        return pharmacyRepository.existsByEmail(email);
+    }
+
+
 }

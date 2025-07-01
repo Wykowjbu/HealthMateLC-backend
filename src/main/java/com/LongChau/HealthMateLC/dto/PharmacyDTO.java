@@ -20,6 +20,5 @@ public class PharmacyDTO {
     @Size(max = 100, message = "Email tối đa 100 ký tự")
     private String email;
 
-    @NotNull(message = "Trạng thái hoạt động không được để trống")
     private Boolean isActive;
 }

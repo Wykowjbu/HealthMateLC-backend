@@ -193,8 +193,7 @@ public class AdminController {
             // Create product using service
             Product createdProduct = productService.createProduct(productDTO);
 
-            response.put("message", "Thêm sản phẩm thành công");
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            return ResponseEntity.ok(Map.of("message", "Thêm sản phẩm thành công"));
         } catch (RuntimeException e) {
             response.put("message", e.getMessage());
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -226,14 +225,75 @@ public class AdminController {
             String errorMessage = bindingResult.getFieldErrors().get(0).getDefaultMessage();
             return ResponseEntity.badRequest().body(Map.of("message", errorMessage));
         }
+        // Kiểm tra trùng tên nhà thuốc
+        if (pharmacyService.existsByPharmacyName(dto.getPharmacyName())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Tên nhà thuốc đã tồn tại"));
+        }
+        // Kiểm tra trùng số điện thoại
+        if (pharmacyService.existsByPhone(dto.getPhone())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Số điện thoại đã tồn tại"));
+        }
+        // Kiểm tra trùng email (nếu có nhập)
+        if (dto.getEmail() != null && !dto.getEmail().isBlank() && pharmacyService.existsByEmail(dto.getEmail())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email đã tồn tại"));
+        }
         Pharmacy pharmacy = new Pharmacy();
         pharmacy.setPharmacyName(dto.getPharmacyName());
         pharmacy.setAddress(dto.getAddress());
         pharmacy.setPhone(dto.getPhone());
         pharmacy.setEmail(dto.getEmail());
-        pharmacy.setIsActive(dto.getIsActive());
+        pharmacy.setIsActive(true);
         pharmacy.setCreatedDate(LocalDateTime.now());
         pharmacyRepository.save(pharmacy);
         return ResponseEntity.ok(Map.of("message", "Tạo nhà thuốc thành công"));
+    }
+
+    @PutMapping("/update-pharmacy/{id}")
+    public ResponseEntity<?> updatePharmacy(@PathVariable Integer id, @RequestBody Map<String, Object> updates) {
+        Optional<Pharmacy> optionalPharmacy = pharmacyService.findById(id);
+        if (optionalPharmacy.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Nhà thuốc không tồn tại"));
+        }
+        Pharmacy pharmacy = optionalPharmacy.get();
+
+        // Nếu chỉ cập nhật trạng thái
+        if (updates.containsKey("isActive") && updates.size() == 1) {
+            pharmacy.setIsActive((Boolean) updates.get("isActive"));
+            pharmacyRepository.save(pharmacy);
+            return ResponseEntity.ok(Map.of("message", "Cập nhật trạng thái thành công"));
+        }
+
+        // Nếu cập nhật thông tin khác, validate như cũ
+        String pharmacyName = (String) updates.get("pharmacyName");
+        String address = (String) updates.get("address");
+        String phone = (String) updates.get("phone");
+        String email = (String) updates.get("email");
+
+        // Validate trùng tên, số điện thoại, email
+        if (pharmacyName != null && !pharmacy.getPharmacyName().equals(pharmacyName) && pharmacyService.existsByPharmacyName(pharmacyName)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Tên nhà thuốc đã tồn tại"));
+        }
+        if (phone != null && !pharmacy.getPhone().equals(phone) && pharmacyService.existsByPhone(phone)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Số điện thoại đã tồn tại"));
+        }
+        if (email != null && !email.isBlank() && !email.equals(pharmacy.getEmail()) && pharmacyService.existsByEmail(email)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email đã tồn tại"));
+        }
+
+        // Cập nhật thông tin
+        if (pharmacyName != null) pharmacy.setPharmacyName(pharmacyName);
+        if (address != null) pharmacy.setAddress(address);
+        if (phone != null) pharmacy.setPhone(phone);
+        if (email != null) pharmacy.setEmail(email);
+
+        pharmacyRepository.save(pharmacy);
+        return ResponseEntity.ok(Map.of("message", "Cập nhật nhà thuốc thành công"));
+    }
+
+    @GetMapping("/pharmacy/{id}")
+    public ResponseEntity<Pharmacy> getPharmacy(@PathVariable Integer id) {
+        Optional<Pharmacy> pharmacy = pharmacyService.findById(id);
+        return pharmacy.map(ResponseEntity::ok)
+                       .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

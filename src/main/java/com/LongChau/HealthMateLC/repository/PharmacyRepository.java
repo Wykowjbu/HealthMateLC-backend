@@ -12,4 +12,8 @@ import java.util.Optional;
 @Repository
 public interface PharmacyRepository extends JpaRepository<Pharmacy, Integer> {
     boolean existsById(Integer pharmacyId);
+    boolean existsByPharmacyName(String pharmacyName);
+    boolean existsByPhone(String phone);
+    boolean existsByEmail(String email);
 }
+
