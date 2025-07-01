@@ -1,7 +1,9 @@
 package com.LongChau.HealthMateLC.controller;
 
 import com.LongChau.HealthMateLC.model.Customer;
+import com.LongChau.HealthMateLC.model.Product;
 import com.LongChau.HealthMateLC.service.CustomerService;
+import com.LongChau.HealthMateLC.service.ProductsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +16,8 @@ public class EmployeeController {
 
     @Autowired
     private CustomerService customerService;
-
+    @Autowired
+    private ProductsService productsService;
 
     @GetMapping("/danh-sach-khach-hang")
     public ResponseEntity<List<Customer>> getAllCustomers(){
@@ -56,6 +59,12 @@ public class EmployeeController {
             }
         }
         return false;
+    }
+
+    @GetMapping("/danh-sach-san-pham")
+    public ResponseEntity<List<Product>> getAllProducts(){
+        List<Product> list= productsService.getAll();
+        return ResponseEntity.ok(list);
     }
 
 
