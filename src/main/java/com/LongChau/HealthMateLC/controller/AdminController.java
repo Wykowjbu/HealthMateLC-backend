@@ -1,9 +1,6 @@
 package com.LongChau.HealthMateLC.controller;
 
-import com.LongChau.HealthMateLC.dto.PharmacyDTO;
-import com.LongChau.HealthMateLC.dto.UserInformationDTO;
-import com.LongChau.HealthMateLC.dto.UserDTO;
-import com.LongChau.HealthMateLC.dto.ProductDTO;
+import com.LongChau.HealthMateLC.dto.*;
 import com.LongChau.HealthMateLC.model.Pharmacy;
 import com.LongChau.HealthMateLC.model.UserInformation;
 import com.LongChau.HealthMateLC.model.User;
@@ -21,7 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -113,7 +109,9 @@ public class AdminController {
     }
 
     @PostMapping("/add-account")
-    public ResponseEntity<Map<String, String>> addAccount(@Valid @RequestBody UserDTO userDTO, BindingResult bindingResult) {
+    public ResponseEntity<Map<String, String>> addAccount(
+            @Valid @RequestBody UserAccountFullDTO dto,
+            BindingResult bindingResult) {
         Map<String, String> response = new HashMap<>();
 
         // Check validation errors from Bean Validation
@@ -122,53 +120,50 @@ public class AdminController {
             response.put("message", errorMessage);
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
-
+        // Check email exists in UserInformation
+        if (userInformationService.existsByEmail(dto.getEmail())) {
+            response.put("message", "Email đã tồn tại");
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
         // Business logic validation
-        if (userService.existsByUsername(userDTO.getUsername())) {
+        if (userService.existsByUsername(dto.getUsername())) {
             response.put("message", "Tên đăng nhập đã tồn tại");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
-        if (!userService.getDistinctRoles().contains(userDTO.getRole().toLowerCase())) {
+        if (!userService.getDistinctRoles().contains(dto.getRole().toLowerCase())) {
             response.put("message", "Vai trò không hợp lệ");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
-        if (userDTO.getPharmacyId() != null && !pharmacyService.existsById(userDTO.getPharmacyId())) {
-            response.put("message", "Nhà thuốc không tồn tại");
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        // Nếu có pharmacyId thì kiểm tra tồn tại
+        Pharmacy pharmacy = null;
+        if (dto.getPharmacyId() != null) {
+            Optional<Pharmacy> pharmacyOpt = pharmacyService.findById(dto.getPharmacyId());
+            if (pharmacyOpt.isPresent()) {
+                pharmacy = pharmacyOpt.get();
+            } else {
+                response.put("message", "Nhà thuốc không tồn tại");
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            }
         }
 
         try {
             // Create user
-            UserDTO userToSave = new UserDTO(
-                    userDTO.getUsername(),
-                    userDTO.getPassword(),
-                    userDTO.getFullName(),
-                    userDTO.getPhone(),
-                    userDTO.getEmail(),
-                    userDTO.getRole().toLowerCase(),
-                    userDTO.getPharmacyId()
-            );
-            userService.createUser(userToSave);
+            UserDTO userDTO = new UserDTO();
+            userDTO.setUsername(dto.getUsername());
+            userDTO.setPassword(dto.getPassword());
+            userDTO.setRole(dto.getRole());
+            userDTO.setIsActive(dto.getIsActive());
+            userService.createUser(userDTO);
 
             // Create user information
-            User createdUser = userService.findUserByUsername(userDTO.getUsername());
-            if (createdUser != null) {
-                UserInformation userInformation = new UserInformation();
-                userInformation.setUser(createdUser); // @MapsId sẽ tự động set userId
-                userInformation.setFullName(userDTO.getFullName());
-                userInformation.setPhone(userDTO.getPhone());
-                userInformation.setEmail(userDTO.getEmail());
-
-                // Set pharmacy if provided
-                if (userDTO.getPharmacyId() != null) {
-                    Optional<Pharmacy> pharmacy = pharmacyService.findById(userDTO.getPharmacyId());
-                    if (pharmacy.isPresent()) {
-                        userInformation.setPharmacy(pharmacy.get());
-                    }
-                }
-
-                userInformationService.save(userInformation);
-            }
+            User createdUser = userService.findUserByUsername(dto.getUsername());
+            UserInformationDTO userInformationDTO = new UserInformationDTO();
+            userInformationDTO.setFullName(dto.getFullName());
+            userInformationDTO.setPhone(dto.getPhone());
+            userInformationDTO.setEmail(dto.getEmail());
+            userInformationDTO.setRole(dto.getRole());
+            userInformationDTO.setPharmacyId(dto.getPharmacyId());
+            userInformationService.createUserInformation(userInformationDTO, createdUser, pharmacy);
 
             response.put("message", "Tạo tài khoản thành công");
             return new ResponseEntity<>(response, HttpStatus.OK);

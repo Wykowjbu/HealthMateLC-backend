@@ -34,6 +34,8 @@
             return userRepository.existsByUsername(username);
         }
 
+
+
         public List<String> getDistinctRoles() {
         // Return predefined roles instead of querying database
         return List.of("admin", "manager", "employee", "customer-service");
