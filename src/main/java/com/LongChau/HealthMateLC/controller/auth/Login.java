@@ -11,9 +11,10 @@ import jakarta.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
-
+@RequestMapping("/api/auth")
 public class Login {
     @Autowired
     private UserRepository userRepository;
@@ -21,56 +22,46 @@ public class Login {
     @Autowired
     private RedirectConfig redirectConfig;
 
+    @GetMapping("/users")
+    public ResponseEntity<?> getAllUsers() {
+        return ResponseEntity.ok(userRepository.findAll());
+    }
+
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody User loginRequest, HttpSession session) {
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> loginRequest) {
         Map<String, Object> response = new HashMap<>();
         try {
-            User user = userRepository.findUserByUsername(loginRequest.getUsername());
-            if (user != null
-                    && user.getPassword().equals(loginRequest.getPassword())
-                    && user.getUsername().equals(loginRequest.getUsername())) {
+            String username = loginRequest.get("username");
+            String password = loginRequest.get("password");
 
-                System.out.println("DEBUG: Setting session for user: " + user.getUsername());
-                System.out.println("DEBUG: Session ID before setting: " + session.getId());
+            if (username == null || password == null) {
+                response.put("success", false);
+                response.put("message", "Tên đăng nhập hoặc mật khẩu không được để trống");
+                return ResponseEntity.badRequest().body(response);
+            }
 
-                // Chuẩn hóa role thành chữ thường
-                String normalizedRole = user.getRole().toLowerCase();
+            Optional<User> userOpt = userRepository.findByUsername(username);
+            if (userOpt.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Tên đăng nhập không tồn tại");
+                return ResponseEntity.badRequest().body(response);
+            }
 
-                // Set session attributes
-                session.setAttribute("currentUser", user);
-                session.setAttribute("userRole", normalizedRole);
-                session.setAttribute("userId", user.getUserId());
-
-                // Set session timeout
-                session.setMaxInactiveInterval(30 * 60); // 30 minutes
-
-                System.out.println("DEBUG: Session attributes after setting:");
-                System.out.println("DEBUG: currentUser: " + session.getAttribute("currentUser"));
-                System.out.println("DEBUG: userRole: " + session.getAttribute("userRole"));
-                System.out.println("DEBUG: userId: " + session.getAttribute("userId"));
-
-                // Lấy redirect URL
-                String redirectUrl = redirectConfig.getRedirectUrl(normalizedRole);
-                System.out.println("DEBUG: Redirect URL: " + redirectUrl);
-
-                response.put("redirectUrl", redirectUrl);
+            User user = userOpt.get();
+            if (password.equals(user.getPassword())) { // So sánh plain text tạm thời
+                response.put("redirectUrl", redirectConfig.getRedirectUrl(user.getRole()));
                 response.put("success", true);
                 response.put("message", "Đăng nhập thành công!");
-                response.put("role", normalizedRole);
-                response.put("sessionId", session.getId());
-
-                return ResponseEntity.ok()
-                        .header("Set-Cookie", "JSESSIONID=" + session.getId() + "; Path=/; HttpOnly; SameSite=Lax; Domain=localhost")
-                        .body(response);
+                return ResponseEntity.ok(response);
             } else {
                 response.put("success", false);
-                response.put("message", "Tên Đăng Nhập Hoặc Mật Khẩu Không Chính Xác!");
+                response.put("message", "Tên đăng nhập hoặc mật khẩu không chính xác!");
                 return ResponseEntity.badRequest().body(response);
             }
         } catch (Exception e) {
             System.err.println("Login error: " + e.getMessage());
             response.put("success", false);
-            response.put("message", "Có Lỗi Xảy Ra: " + e.getMessage());
+            response.put("message", "Có lỗi xảy ra: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
     }
