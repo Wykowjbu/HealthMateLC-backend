@@ -17,6 +17,8 @@ import com.LongChau.HealthMateLC.model.Feedback;
 public class FeedbackService {
     @Autowired
     private FeedbackRepository feedbackRepository;
+    @Autowired
+    private com.LongChau.HealthMateLC.repository.UserRepository userRepository;
 
     // Lấy tất cả đánh giá
     public List<FeedbackDTO> getAllFeedback() {
@@ -44,12 +46,12 @@ public class FeedbackService {
         }
 
         // Chuyển đổi Customer
-        // Chuyển đổi Customer
         if (entity.getCustomer() != null) {
             FeedbackDTO.CustomerDTO customerDTO = new FeedbackDTO.CustomerDTO();
             customerDTO.setId(entity.getCustomer().getCustomerId());
             customerDTO.setFullname(entity.getCustomer().getFullName());
             customerDTO.setPhone(entity.getCustomer().getPhone());
+            customerDTO.setEmail(entity.getCustomer().getEmail());
             dto.setCustomer(customerDTO);
         }
         return dto;
@@ -68,7 +70,7 @@ public class FeedbackService {
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
-    
+
     // Lấy đánh giá theo ID khách hàng
     public List<FeedbackDTO> getFeedbackByCustomer(int customerId) {
         return feedbackRepository.findByCustomer_CustomerId(customerId)
@@ -79,13 +81,22 @@ public class FeedbackService {
 
     // Cập nhật trạng thái đánh giá
     public Feedback updateFeedbackStatus(int id, String status) {
+        return updateFeedbackStatus(id, status, null);
+    }
+
+    // Cập nhật trạng thái đánh giá, handledByUserId
+    public Feedback updateFeedbackStatus(int id, String status, Integer handledByUserId) {
         Optional<Feedback> reviewOpt = feedbackRepository.findById(id);
         if (reviewOpt.isPresent()) {
             Feedback feedback = reviewOpt.get();
-
-            // thêm một cột mới ở database
             feedback.setStatus(status);
-            if ("APPROVED".equals(status) || "REJECTED".equals(status)) {
+            if (("APPROVED".equals(status) || "REJECTED".equals(status)) && handledByUserId != null) {
+                // Validate user
+                Optional<com.LongChau.HealthMateLC.model.User> userOpt = userRepository.findById(handledByUserId);
+                if (userOpt.isEmpty()) {
+                    throw new IllegalArgumentException("User không tồn tại");
+                }
+                feedback.setHandledByUser(userOpt.get());
                 feedback.setHandledDate(LocalDateTime.now());
             }
             return feedbackRepository.save(feedback);

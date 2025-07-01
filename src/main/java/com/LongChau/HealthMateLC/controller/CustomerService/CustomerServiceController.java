@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,12 +19,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.LongChau.HealthMateLC.dto.CustomerService.UserInformationCsDTO;
 import com.LongChau.HealthMateLC.dto.CustomerService.FeedbackDTO;
 import com.LongChau.HealthMateLC.dto.CustomerService.PharmacyDTO;
+import com.LongChau.HealthMateLC.dto.CustomerService.SendEmailRequest;
 import com.LongChau.HealthMateLC.model.Feedback;
 import com.LongChau.HealthMateLC.model.User;
 import com.LongChau.HealthMateLC.model.UserInformation;
 import com.LongChau.HealthMateLC.repository.UserInformationRepository;
 import com.LongChau.HealthMateLC.service.FeedbackService;
 import com.LongChau.HealthMateLC.service.PharmacyService;
+import com.LongChau.HealthMateLC.service.EmailService;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -36,6 +39,8 @@ public class CustomerServiceController {
     private FeedbackService feedbackService;
     @Autowired
     private UserInformationRepository userInformationRepository;
+    @Autowired
+    private EmailService emailService;
 
     // #region Pharmacy
     @GetMapping("/pharmacies")
@@ -82,11 +87,20 @@ public class CustomerServiceController {
             @RequestBody Map<String, String> statusUpdate) {
 
         String status = statusUpdate.get("status");
+        String handledByUserIdStr = statusUpdate.get("handledByUserId");
+        Integer handledByUserId = null;
+        if (handledByUserIdStr != null) {
+            try {
+                handledByUserId = Integer.parseInt(handledByUserIdStr);
+            } catch (NumberFormatException e) {
+                return ResponseEntity.badRequest().body(null);
+            }
+        }
         if (status == null) {
             return ResponseEntity.badRequest().build();
         }
 
-        Feedback updatedFeedback = feedbackService.updateFeedbackStatus(id, status);
+        Feedback updatedFeedback = feedbackService.updateFeedbackStatus(id, status, handledByUserId);
         if (updatedFeedback != null) {
             return ResponseEntity.ok(feedbackService.toDTO(updatedFeedback));
         } else {
@@ -115,4 +129,26 @@ public class CustomerServiceController {
     }
     // #endregion
 
+    // #region Messaging/Email
+    @PostMapping("/send-email")
+    public ResponseEntity<?> sendEmailToCustomer(@RequestBody SendEmailRequest request, HttpSession session) {
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized: Please login to send email"));
+        }
+        String email = request.getTo();
+        if (email == null || email.trim().isEmpty() || !email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Invalid or missing email address"));
+        }
+        try {
+            emailService.sendSimpleEmail(email, request.getSubject(), request.getContent());
+            return ResponseEntity.ok(Map.of("message", "Email sent successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to send email: " + e.getMessage()));
+        }
+    }
+    // #endregion
 }

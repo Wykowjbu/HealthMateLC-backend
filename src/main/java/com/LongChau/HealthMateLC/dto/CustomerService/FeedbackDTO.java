@@ -15,6 +15,7 @@ public class FeedbackDTO {
         private int id;
         private String fullname;
         private String phone;
+        private String email;
 
         public int getId() {
             return id;
@@ -42,6 +43,13 @@ public class FeedbackDTO {
             this.fullname = fullname;
         }
 
+        public String getEmail() {
+            return email;
+        }
+
+        public void setEmail(String email) {
+            this.email = email;
+        }
     }
 
     public int getId() {
