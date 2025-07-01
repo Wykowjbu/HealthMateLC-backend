@@ -34,4 +34,7 @@ public class User {
 
     @Column(name = "CreatedDate")
     private LocalDateTime createdDate = LocalDateTime.now();
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private UserInformation userInformation;
 }
