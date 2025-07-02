@@ -27,6 +27,8 @@ import com.LongChau.HealthMateLC.repository.UserInformationRepository;
 import com.LongChau.HealthMateLC.service.FeedbackService;
 import com.LongChau.HealthMateLC.service.PharmacyService;
 import com.LongChau.HealthMateLC.service.EmailService;
+import com.LongChau.HealthMateLC.service.CustomerMessageService;
+import com.LongChau.HealthMateLC.model.CustomerMessage;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -41,6 +43,8 @@ public class CustomerServiceController {
     private UserInformationRepository userInformationRepository;
     @Autowired
     private EmailService emailService;
+    @Autowired
+    private CustomerMessageService customerMessageService;
 
     // #region Pharmacy
     @GetMapping("/pharmacies")
@@ -144,8 +148,33 @@ public class CustomerServiceController {
         }
         try {
             emailService.sendSimpleEmail(email, request.getSubject(), request.getContent());
+            // Lưu trực tiếp CustomerMessage không qua DTO trung gian
+            CustomerMessage message = new CustomerMessage();
+            message.setSenderId(user.getUserId());
+            message.setMessageType(request.getType() != null ? request.getType() : "email");
+            message.setChannel(request.getChannel() != null ? request.getChannel() : "email");
+            String targetType = request.getTarget();
+            if (targetType == null || targetType.trim().isEmpty()) {
+                targetType = "individual";
+            }
+            message.setTargetType(targetType);
+            message.setTargetCustomerId(request.getCustomerId());
+            message.setMessageText(request.getContent());
+            java.time.LocalDateTime sentAt = null;
+            try {
+                if (request.getSendTime() != null) {
+                    sentAt = java.time.LocalDateTime.parse(request.getSendTime().replace("Z", ""));
+                }
+            } catch (Exception e) {
+                sentAt = java.time.LocalDateTime.now();
+            }
+            if (sentAt == null)
+                sentAt = java.time.LocalDateTime.now();
+            message.setSentAt(sentAt);
+            customerMessageService.saveMessage(message);
             return ResponseEntity.ok(Map.of("message", "Email sent successfully"));
         } catch (Exception e) {
+            e.printStackTrace(); // Log lỗi gửi email
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to send email: " + e.getMessage()));
         }
