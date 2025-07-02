@@ -17,10 +17,9 @@ public class CorsConfig implements WebMvcConfigurer {
                 .allowedOrigins(
                     "http://localhost:3000",
                     "http://localhost:5173",
-                    "https//127.0.0.1:5500",
+                    "http://127.0.0.1:5500",
                     "https://wykowjbu.github.io",
-                        "http://localhost:63342",
-                        "https://vohai04.github.io"
+                        "http://localhost:63342"
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
@@ -37,6 +36,7 @@ public class CorsConfig implements WebMvcConfigurer {
         configuration.addAllowedOrigin("http://localhost:63342");
         configuration.addAllowedOrigin("https://vohai04.github.io");
         configuration.addAllowedOrigin("https://wykowjbu.github.io");
+        configuration.addAllowedOrigin("http://localhost:63342");
         configuration.addAllowedMethod("*");
         configuration.addAllowedHeader("*");
         configuration.setAllowCredentials(true);
