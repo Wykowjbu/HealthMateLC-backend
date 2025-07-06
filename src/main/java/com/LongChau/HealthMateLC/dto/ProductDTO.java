@@ -6,6 +6,8 @@ import java.math.BigDecimal;
 
 @Data
 public class ProductDTO {
+    private Integer productId;
+    
     @NotBlank(message = "Tên sản phẩm không được để trống")
     @Size(min = 2, max = 255, message = "Tên sản phẩm phải từ 2 đến 255 ký tự")
     private String productName;

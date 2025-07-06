@@ -44,5 +44,8 @@ public class PharmacyService {
         return pharmacyRepository.existsByEmail(email);
     }
 
+    public List<Pharmacy> searchPharmacies(String keyword, String type) {
+        return pharmacyRepository.searchPharmacies(keyword, type);
+    }
 
 }

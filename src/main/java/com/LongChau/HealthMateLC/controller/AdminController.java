@@ -204,6 +204,78 @@ public class AdminController {
         List<ProductDTO> dtos = new ArrayList<>();
         for (Product p : products) {
             ProductDTO dto = new ProductDTO();
+            dto.setProductId(p.getProductId());
+            dto.setProductName(p.getProductName());
+            dto.setProductType(p.getProductType());
+            dto.setUnit(p.getUnit());
+            dto.setPrice(p.getPrice());
+            dto.setDescription(p.getDescription());
+            dtos.add(dto);
+        }
+        return new ResponseEntity<>(dtos, HttpStatus.OK);
+    }
+
+    @GetMapping("/product/{id}")
+    public ResponseEntity<ProductDTO> getProduct(@PathVariable Integer id) {
+        System.out.println("Getting product with ID: " + id);
+        Optional<Product> product = productService.findById(id);
+        if (product.isPresent()) {
+            Product p = product.get();
+            System.out.println("Product found: " + p.getProductName());
+            ProductDTO dto = new ProductDTO();
+            dto.setProductId(p.getProductId());
+            dto.setProductName(p.getProductName());
+            dto.setProductType(p.getProductType());
+            dto.setUnit(p.getUnit());
+            dto.setPrice(p.getPrice());
+            dto.setDescription(p.getDescription());
+            return ResponseEntity.ok(dto);
+        }
+        System.out.println("Product not found with ID: " + id);
+        return ResponseEntity.notFound().build();
+    }
+
+    @PutMapping("/edit-product/{id}")
+    public ResponseEntity<Map<String, String>> updateProduct(@PathVariable Integer id, 
+                                                           @Valid @RequestBody ProductDTO productDTO, 
+                                                           BindingResult bindingResult) {
+        Map<String, String> response = new HashMap<>();
+
+        // Check validation errors from Bean Validation
+        if (bindingResult.hasErrors()) {
+            String errorMessage = bindingResult.getFieldErrors().get(0).getDefaultMessage();
+            response.put("message", errorMessage);
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+
+        try {
+            // Check if product exists
+            Optional<Product> existingProduct = productService.findById(id);
+            if (existingProduct.isEmpty()) {
+                response.put("message", "Sản phẩm không tồn tại");
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            }
+
+            // Update product using service
+            Product updatedProduct = productService.updateProduct(id, productDTO);
+            response.put("message", "Cập nhật sản phẩm thành công");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            response.put("message", e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            response.put("message", "Lỗi khi cập nhật sản phẩm: " + e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/search-products")
+    public ResponseEntity<List<ProductDTO>> searchProducts(@RequestParam String keyword, @RequestParam(defaultValue = "all") String type) {
+        List<Product> products = productService.searchProducts(keyword, type);
+        List<ProductDTO> dtos = new ArrayList<>();
+        for (Product p : products) {
+            ProductDTO dto = new ProductDTO();
+            dto.setProductId(p.getProductId());
             dto.setProductName(p.getProductName());
             dto.setProductType(p.getProductType());
             dto.setUnit(p.getUnit());
@@ -285,10 +357,127 @@ public class AdminController {
         return ResponseEntity.ok(Map.of("message", "Cập nhật nhà thuốc thành công"));
     }
 
+    @PutMapping("/update-pharmacy-info/{id}")
+    public ResponseEntity<?> updatePharmacyInfo(@PathVariable Integer id, @RequestBody Map<String, Object> updates) {
+        Optional<Pharmacy> optionalPharmacy = pharmacyService.findById(id);
+        if (optionalPharmacy.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Nhà thuốc không tồn tại"));
+        }
+        Pharmacy pharmacy = optionalPharmacy.get();
+
+        // Chỉ cho phép cập nhật địa chỉ, số điện thoại, email (không cho sửa tên)
+        String address = (String) updates.get("address");
+        String phone = (String) updates.get("phone");
+        String email = (String) updates.get("email");
+
+        // Validate trùng số điện thoại, email
+        if (phone != null && !pharmacy.getPhone().equals(phone) && pharmacyService.existsByPhone(phone)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Số điện thoại đã tồn tại"));
+        }
+        if (email != null && !email.isBlank() && !email.equals(pharmacy.getEmail()) && pharmacyService.existsByEmail(email)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email đã tồn tại"));
+        }
+
+        // Cập nhật thông tin (chỉ địa chỉ, số điện thoại, email)
+        if (address != null) pharmacy.setAddress(address);
+        if (phone != null) pharmacy.setPhone(phone);
+        if (email != null) pharmacy.setEmail(email);
+
+        pharmacyRepository.save(pharmacy);
+        return ResponseEntity.ok(Map.of("message", "Cập nhật thông tin nhà thuốc thành công"));
+    }
+
     @GetMapping("/pharmacy/{id}")
     public ResponseEntity<Pharmacy> getPharmacy(@PathVariable Integer id) {
         Optional<Pharmacy> pharmacy = pharmacyService.findById(id);
         return pharmacy.map(ResponseEntity::ok)
                        .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/search-pharmacies")
+    public ResponseEntity<List<Map<String, Object>>> searchPharmacies(@RequestParam String keyword, @RequestParam(defaultValue = "all") String type) {
+        List<Pharmacy> pharmacies = pharmacyService.searchPharmacies(keyword, type);
+        List<Map<String, Object>> result = new ArrayList<>();
+        
+        for (Pharmacy p : pharmacies) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("pharmacyId", p.getPharmacyId());
+            map.put("pharmacyName", p.getPharmacyName());
+            map.put("address", p.getAddress());
+            map.put("phone", p.getPhone());
+            map.put("email", p.getEmail());
+            map.put("isActive", p.getIsActive());
+            
+            // Lấy tất cả manager của nhà thuốc
+            List<UserInformation> managers = userInformationService.findManagersByPharmacyId(p.getPharmacyId());
+            String managerNames = "";
+            if (managers != null && !managers.isEmpty()) {
+                List<String> names = new ArrayList<>();
+                for (UserInformation manager : managers) {
+                    String name = (manager.getFullName() != null && !manager.getFullName().isBlank())
+                        ? manager.getFullName() : manager.getUser().getUsername();
+                    names.add(name);
+                }
+                managerNames = String.join(", ", names);
+            }
+            map.put("manager", managerNames.isEmpty() ? "Chưa gán" : managerNames);
+            result.add(map);
+        }
+        
+        return ResponseEntity.ok(result);
+    }
+
+    @DeleteMapping("/delete-product/{id}")
+    public ResponseEntity<Map<String, String>> deleteProduct(@PathVariable Integer id) {
+        Map<String, String> response = new HashMap<>();
+        
+        try {
+            // Check if product exists
+            Optional<Product> existingProduct = productService.findById(id);
+            if (existingProduct.isEmpty()) {
+                response.put("message", "Sản phẩm không tồn tại");
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            }
+
+            // Delete product using service
+            productService.deleteProduct(id);
+            response.put("message", "Xóa sản phẩm thành công");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            response.put("message", e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            response.put("message", "Lỗi khi xóa sản phẩm: " + e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @DeleteMapping("/delete-pharmacy/{id}")
+    public ResponseEntity<Map<String, String>> deletePharmacy(@PathVariable Integer id) {
+        Map<String, String> response = new HashMap<>();
+        
+        try {
+            // Check if pharmacy exists
+            Optional<Pharmacy> existingPharmacy = pharmacyService.findById(id);
+            if (existingPharmacy.isEmpty()) {
+                response.put("message", "Nhà thuốc không tồn tại");
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            }
+
+            // Check if pharmacy has employees/managers
+            List<UserInformationDTO> users = userInformationService.getEmployeeAndManagerByPharmacyId(id);
+            if (users != null && !users.isEmpty()) {
+                response.put("message", "Không thể xóa nhà thuốc đang có nhân viên. Vui lòng chuyển nhân viên sang nhà thuốc khác trước.");
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            }
+
+            // Delete pharmacy using repository
+            pharmacyRepository.deleteById(id);
+            response.put("message", "Xóa nhà thuốc thành công");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            response.put("message", "Lỗi khi xóa nhà thuốc: " + e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

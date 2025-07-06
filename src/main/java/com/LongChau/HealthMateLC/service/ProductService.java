@@ -40,10 +40,18 @@ public class ProductService {
     public Optional<Product> getProductById(Integer productId) {
         return productRepository.findById(productId);
     }
+
+    public Optional<Product> findById(Integer productId) {
+        return productRepository.findById(productId);
+    }
     
 
     public Optional<Product> getProductByName(String productName) {
         return productRepository.findByProductName(productName);
+    }
+
+    public List<Product> searchProducts(String keyword, String type) {
+        return productRepository.searchProducts(keyword, type);
     }
 
     public Product updateProduct(Integer productId, ProductDTO productDTO) {
