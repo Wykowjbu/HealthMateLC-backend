@@ -11,6 +11,7 @@ public class UserInformationDTO {
     private String email;
     private String role;
     private Integer pharmacyId;
+    private boolean isActive;
 
     public UserInformationDTO() {}
 

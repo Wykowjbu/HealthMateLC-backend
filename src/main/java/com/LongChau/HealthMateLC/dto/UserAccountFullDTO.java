@@ -16,7 +16,7 @@ public class UserAccountFullDTO {
     private String password;
 
     @NotBlank(message = "Vai trò không được để trống")
-    @Pattern(regexp = "^(employee|manager|csvc)$", message = "Vai trò phải là employee, manager hoặc csvc")
+    @Pattern(regexp = "^(employee|manager|customer-service)$", message = "Vai trò phải là employee, manager hoặc chăm sóc khách hàng")
     private String role;
 
     @NotNull(message = "Trạng thái hoạt động không được để trống")

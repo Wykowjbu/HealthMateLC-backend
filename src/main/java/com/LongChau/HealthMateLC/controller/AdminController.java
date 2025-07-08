@@ -54,8 +54,23 @@ public class AdminController {
         numberList.add(customerService.getNumberOfCustomers());
         map.put("listNumbers", numberList);
 
+        // SỬA ĐÂY: Chuyển entity thành Map để tránh Hibernate proxy
         List<Pharmacy> pharmacies = pharmacyService.getAllPharmacies();
-        map.put("listPharmacies", pharmacies);
+        List<Map<String, Object>> pharmacyMaps = new ArrayList<>();
+
+        for (Pharmacy p : pharmacies) {
+            Map<String, Object> pharmacyMap = new HashMap<>();
+            pharmacyMap.put("pharmacyId", p.getPharmacyId());
+            pharmacyMap.put("pharmacyName", p.getPharmacyName());
+            pharmacyMap.put("address", p.getAddress());
+            pharmacyMap.put("phone", p.getPhone());
+            pharmacyMap.put("email", p.getEmail());
+            pharmacyMap.put("isActive", p.getIsActive());
+            pharmacyMap.put("createdDate", p.getCreatedDate());
+            pharmacyMaps.add(pharmacyMap);
+        }
+
+        map.put("listPharmacies", pharmacyMaps); // Dùng Map thay vì entity
 
         Map<String, Object> map1 = new HashMap<>();
         pharmacies.forEach(pharmacy -> {
@@ -67,9 +82,23 @@ public class AdminController {
     }
 
     @GetMapping("/list-pharmacies")
-    public ResponseEntity<List<Pharmacy>> listPharmacies() {
+    public ResponseEntity<List<Map<String, Object>>> listPharmacies() {
         List<Pharmacy> pharmacies = pharmacyService.getAllPharmacies();
-        return new ResponseEntity<>(pharmacies, HttpStatus.OK);
+        List<Map<String, Object>> pharmacyMaps = new ArrayList<>();
+
+        for (Pharmacy p : pharmacies) {
+            Map<String, Object> pharmacyMap = new HashMap<>();
+            pharmacyMap.put("pharmacyId", p.getPharmacyId());
+            pharmacyMap.put("pharmacyName", p.getPharmacyName());
+            pharmacyMap.put("address", p.getAddress());
+            pharmacyMap.put("phone", p.getPhone());
+            pharmacyMap.put("email", p.getEmail());
+            pharmacyMap.put("isActive", p.getIsActive());
+            pharmacyMap.put("createdDate", p.getCreatedDate());
+            pharmacyMaps.add(pharmacyMap);
+        }
+
+        return new ResponseEntity<>(pharmacyMaps, HttpStatus.OK);
     }
 
     @GetMapping("/list-pharmacy")
@@ -91,7 +120,7 @@ public class AdminController {
                 List<String> names = new ArrayList<>();
                 for (UserInformation manager : managers) {
                     String name = (manager.getFullName() != null && !manager.getFullName().isBlank())
-                        ? manager.getFullName() : manager.getUser().getUsername();
+                            ? manager.getFullName() : manager.getUser().getUsername();
                     names.add(name);
                 }
                 managerNames = String.join(", ", names);
@@ -236,9 +265,9 @@ public class AdminController {
     }
 
     @PutMapping("/edit-product/{id}")
-    public ResponseEntity<Map<String, String>> updateProduct(@PathVariable Integer id, 
-                                                           @Valid @RequestBody ProductDTO productDTO, 
-                                                           BindingResult bindingResult) {
+    public ResponseEntity<Map<String, String>> updateProduct(@PathVariable Integer id,
+                                                             @Valid @RequestBody ProductDTO productDTO,
+                                                             BindingResult bindingResult) {
         Map<String, String> response = new HashMap<>();
 
         // Check validation errors from Bean Validation
@@ -391,14 +420,99 @@ public class AdminController {
     public ResponseEntity<Pharmacy> getPharmacy(@PathVariable Integer id) {
         Optional<Pharmacy> pharmacy = pharmacyService.findById(id);
         return pharmacy.map(ResponseEntity::ok)
-                       .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/search-pharmacies")
     public ResponseEntity<List<Map<String, Object>>> searchPharmacies(@RequestParam String keyword, @RequestParam(defaultValue = "all") String type) {
         List<Pharmacy> pharmacies = pharmacyService.searchPharmacies(keyword, type);
         List<Map<String, Object>> result = new ArrayList<>();
+
+        for (Pharmacy p : pharmacies) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("pharmacyId", p.getPharmacyId());
+            map.put("pharmacyName", p.getPharmacyName());
+            map.put("address", p.getAddress());
+            map.put("phone", p.getPhone());
+            map.put("email", p.getEmail());
+            map.put("isActive", p.getIsActive());
+
+            // Lấy tất cả manager của nhà thuốc
+            List<UserInformation> managers = userInformationService.findManagersByPharmacyId(p.getPharmacyId());
+            String managerNames = "";
+            if (managers != null && !managers.isEmpty()) {
+                List<String> names = new ArrayList<>();
+                for (UserInformation manager : managers) {
+                    String name = (manager.getFullName() != null && !manager.getFullName().isBlank())
+                            ? manager.getFullName() : manager.getUser().getUsername();
+                    names.add(name);
+                }
+                managerNames = String.join(", ", names);
+            }
+            map.put("manager", managerNames.isEmpty() ? "Chưa gán" : managerNames);
+            result.add(map);
+        }
+
+        return ResponseEntity.ok(result);
+    }
+
+    // Thêm các endpoint mới cho phân trang
+    @GetMapping("/list-products-paginated")
+    public ResponseEntity<Map<String, Object>> listProductsPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         
+        Map<String, Object> response = new HashMap<>();
+        
+        // Tính offset
+        int offset = page * size;
+        
+        // Lấy tổng số sản phẩm
+        long totalProducts = productService.getTotalProductCount();
+        
+        // Lấy sản phẩm theo phân trang
+        List<Product> products = productService.getProductsPaginated(offset, size);
+        
+        // Convert to DTO
+        List<ProductDTO> dtos = new ArrayList<>();
+        for (Product p : products) {
+            ProductDTO dto = new ProductDTO();
+            dto.setProductId(p.getProductId());
+            dto.setProductName(p.getProductName());
+            dto.setProductType(p.getProductType());
+            dto.setUnit(p.getUnit());
+            dto.setPrice(p.getPrice());
+            dto.setDescription(p.getDescription());
+            dtos.add(dto);
+        }
+        
+        response.put("products", dtos);
+        response.put("totalItems", totalProducts);
+        response.put("totalPages", (int) Math.ceil((double) totalProducts / size));
+        response.put("currentPage", page);
+        response.put("pageSize", size);
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/list-pharmacies-paginated")
+    public ResponseEntity<Map<String, Object>> listPharmaciesPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        Map<String, Object> response = new HashMap<>();
+        
+        // Tính offset
+        int offset = page * size;
+        
+        // Lấy tổng số nhà thuốc
+        long totalPharmacies = pharmacyService.getTotalPharmacyCount();
+        
+        // Lấy nhà thuốc theo phân trang
+        List<Pharmacy> pharmacies = pharmacyService.getPharmaciesPaginated(offset, size);
+        
+        // Convert to Map để tránh Hibernate proxy
+        List<Map<String, Object>> pharmacyMaps = new ArrayList<>();
         for (Pharmacy p : pharmacies) {
             Map<String, Object> map = new HashMap<>();
             map.put("pharmacyId", p.getPharmacyId());
@@ -408,7 +522,93 @@ public class AdminController {
             map.put("email", p.getEmail());
             map.put("isActive", p.getIsActive());
             
-            // Lấy tất cả manager của nhà thuốc
+            // Lấy manager
+            List<UserInformation> managers = userInformationService.findManagersByPharmacyId(p.getPharmacyId());
+            String managerNames = "";
+            if (managers != null && !managers.isEmpty()) {
+                List<String> names = new ArrayList<>();
+                for (UserInformation manager : managers) {
+                    String name = (manager.getFullName() != null && !manager.getFullName().isBlank())
+                        ? manager.getFullName() : manager.getUser().getUsername();
+                    names.add(name);
+                }
+                managerNames = String.join(", ", names);
+            }
+            map.put("manager", managerNames.isEmpty() ? "Chưa gán" : managerNames);
+            pharmacyMaps.add(map);
+        }
+        
+        response.put("pharmacies", pharmacyMaps);
+        response.put("totalItems", totalPharmacies);
+        response.put("totalPages", (int) Math.ceil((double) totalPharmacies / size));
+        response.put("currentPage", page);
+        response.put("pageSize", size);
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/search-products-paginated")
+    public ResponseEntity<Map<String, Object>> searchProductsPaginated(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "all") String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        Map<String, Object> response = new HashMap<>();
+        int offset = page * size;
+        
+        // Lấy kết quả tìm kiếm với phân trang
+        long totalProducts = productService.getSearchProductCount(keyword, type);
+        List<Product> products = productService.searchProductsPaginated(keyword, type, offset, size);
+        
+        // Convert to DTO
+        List<ProductDTO> dtos = new ArrayList<>();
+        for (Product p : products) {
+            ProductDTO dto = new ProductDTO();
+            dto.setProductId(p.getProductId());
+            dto.setProductName(p.getProductName());
+            dto.setProductType(p.getProductType());
+            dto.setUnit(p.getUnit());
+            dto.setPrice(p.getPrice());
+            dto.setDescription(p.getDescription());
+            dtos.add(dto);
+        }
+        
+        response.put("products", dtos);
+        response.put("totalItems", totalProducts);
+        response.put("totalPages", (int) Math.ceil((double) totalProducts / size));
+        response.put("currentPage", page);
+        response.put("pageSize", size);
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/search-pharmacies-paginated")
+    public ResponseEntity<Map<String, Object>> searchPharmaciesPaginated(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "all") String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        Map<String, Object> response = new HashMap<>();
+        int offset = page * size;
+        
+        // Lấy kết quả tìm kiếm với phân trang
+        long totalPharmacies = pharmacyService.getSearchPharmacyCount(keyword, type);
+        List<Pharmacy> pharmacies = pharmacyService.searchPharmaciesPaginated(keyword, type, offset, size);
+        
+        // Convert to Map
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Pharmacy p : pharmacies) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("pharmacyId", p.getPharmacyId());
+            map.put("pharmacyName", p.getPharmacyName());
+            map.put("address", p.getAddress());
+            map.put("phone", p.getPhone());
+            map.put("email", p.getEmail());
+            map.put("isActive", p.getIsActive());
+            
+            // Lấy manager
             List<UserInformation> managers = userInformationService.findManagersByPharmacyId(p.getPharmacyId());
             String managerNames = "";
             if (managers != null && !managers.isEmpty()) {
@@ -424,60 +624,12 @@ public class AdminController {
             result.add(map);
         }
         
-        return ResponseEntity.ok(result);
-    }
-
-    @DeleteMapping("/delete-product/{id}")
-    public ResponseEntity<Map<String, String>> deleteProduct(@PathVariable Integer id) {
-        Map<String, String> response = new HashMap<>();
+        response.put("pharmacies", result);
+        response.put("totalItems", totalPharmacies);
+        response.put("totalPages", (int) Math.ceil((double) totalPharmacies / size));
+        response.put("currentPage", page);
+        response.put("pageSize", size);
         
-        try {
-            // Check if product exists
-            Optional<Product> existingProduct = productService.findById(id);
-            if (existingProduct.isEmpty()) {
-                response.put("message", "Sản phẩm không tồn tại");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-            }
-
-            // Delete product using service
-            productService.deleteProduct(id);
-            response.put("message", "Xóa sản phẩm thành công");
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            response.put("message", e.getMessage());
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            response.put("message", "Lỗi khi xóa sản phẩm: " + e.getMessage());
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @DeleteMapping("/delete-pharmacy/{id}")
-    public ResponseEntity<Map<String, String>> deletePharmacy(@PathVariable Integer id) {
-        Map<String, String> response = new HashMap<>();
-        
-        try {
-            // Check if pharmacy exists
-            Optional<Pharmacy> existingPharmacy = pharmacyService.findById(id);
-            if (existingPharmacy.isEmpty()) {
-                response.put("message", "Nhà thuốc không tồn tại");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-            }
-
-            // Check if pharmacy has employees/managers
-            List<UserInformationDTO> users = userInformationService.getEmployeeAndManagerByPharmacyId(id);
-            if (users != null && !users.isEmpty()) {
-                response.put("message", "Không thể xóa nhà thuốc đang có nhân viên. Vui lòng chuyển nhân viên sang nhà thuốc khác trước.");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-            }
-
-            // Delete pharmacy using repository
-            pharmacyRepository.deleteById(id);
-            response.put("message", "Xóa nhà thuốc thành công");
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (Exception e) {
-            response.put("message", "Lỗi khi xóa nhà thuốc: " + e.getMessage());
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        return ResponseEntity.ok(response);
     }
 }

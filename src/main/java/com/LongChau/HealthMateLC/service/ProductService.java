@@ -14,22 +14,22 @@ public class ProductService {
     
     @Autowired
     private ProductRepository productRepository;
-
-    public Product createProduct(ProductDTO productDTO) {
-
-        if (productRepository.findByProductName(productDTO.getProductName().trim()).isPresent()) {
-            throw new RuntimeException("Tên sản phẩm đã tồn tại trong hệ thống");
-        }
-        
-        // Tạo sản phẩm mới
-        Product product = new Product();
-        product.setProductName(productDTO.getProductName().trim());
-        product.setProductType(productDTO.getProductType().trim());
-        product.setUnit(productDTO.getUnit().trim());
-        product.setDescription(productDTO.getDescription() != null ? productDTO.getDescription().trim() : "");
-        product.setPrice(productDTO.getPrice());
-        
-        return productRepository.save(product);
+    
+    // Phương thức cho phân trang
+    public List<Product> getProductsPaginated(int offset, int size) {
+        return productRepository.findProductsPaginated(offset, size);
+    }
+    
+    public long getTotalProductCount() {
+        return productRepository.getTotalProductCount();
+    }
+    
+    public List<Product> searchProductsPaginated(String keyword, String type, int offset, int size) {
+        return productRepository.searchProductsPaginated(keyword, type, offset, size);
+    }
+    
+    public long getSearchProductCount(String keyword, String type) {
+        return productRepository.getSearchProductCount(keyword, type);
     }
     
 
@@ -54,6 +54,23 @@ public class ProductService {
         return productRepository.searchProducts(keyword, type);
     }
 
+    public Product createProduct(ProductDTO productDTO) {
+        // Validate duplicate product name
+        if (productRepository.existsByProductName(productDTO.getProductName())) {
+            throw new RuntimeException("Tên sản phẩm đã tồn tại");
+        }
+        
+        Product product = new Product();
+        product.setProductName(productDTO.getProductName());
+        product.setProductType(productDTO.getProductType());
+        product.setUnit(productDTO.getUnit());
+        product.setPrice(productDTO.getPrice());
+        product.setDescription(productDTO.getDescription());
+        
+        return productRepository.save(product);
+    }
+    
+
     public Product updateProduct(Integer productId, ProductDTO productDTO) {
         Optional<Product> existingProduct = productRepository.findById(productId);
         if (existingProduct.isEmpty()) {
@@ -62,18 +79,17 @@ public class ProductService {
         
         Product product = existingProduct.get();
         
-        // Kiểm tra tên mới có trùng với sản phẩm khác không
-        Optional<Product> duplicateName = productRepository.findByProductName(productDTO.getProductName().trim());
-        if (duplicateName.isPresent() && !duplicateName.get().getProductId().equals(productId)) {
-            throw new RuntimeException("Tên sản phẩm đã tồn tại trong hệ thống");
+        // Check if name is changed and if new name already exists
+        if (!product.getProductName().equals(productDTO.getProductName()) && 
+            productRepository.existsByProductName(productDTO.getProductName())) {
+            throw new RuntimeException("Tên sản phẩm đã tồn tại");
         }
         
-        // Cập nhật thông tin
-        product.setProductName(productDTO.getProductName().trim());
-        product.setProductType(productDTO.getProductType().trim());
-        product.setUnit(productDTO.getUnit().trim());
-        product.setDescription(productDTO.getDescription() != null ? productDTO.getDescription().trim() : "");
+        product.setProductName(productDTO.getProductName());
+        product.setProductType(productDTO.getProductType());
+        product.setUnit(productDTO.getUnit());
         product.setPrice(productDTO.getPrice());
+        product.setDescription(productDTO.getDescription());
         
         return productRepository.save(product);
     }

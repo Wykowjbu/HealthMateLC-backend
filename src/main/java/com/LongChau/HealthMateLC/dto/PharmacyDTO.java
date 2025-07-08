@@ -5,6 +5,8 @@ import lombok.Data;
 
 @Data
 public class PharmacyDTO {
+    private Integer pharmacyId;
+
     @NotBlank(message = "Tên nhà thuốc không được để trống")
     @Size(max = 100, message = "Tên nhà thuốc tối đa 100 ký tự")
     private String pharmacyName;

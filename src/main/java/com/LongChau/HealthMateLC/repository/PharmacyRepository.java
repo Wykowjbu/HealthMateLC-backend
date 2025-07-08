@@ -6,10 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface PharmacyRepository extends JpaRepository<Pharmacy, Integer> {
@@ -18,13 +15,43 @@ public interface PharmacyRepository extends JpaRepository<Pharmacy, Integer> {
     boolean existsByPhone(String phone);
     boolean existsByEmail(String email);
     
-    @Query("SELECT p FROM Pharmacy p WHERE " +
-           "(:type = 'name' AND LOWER(p.pharmacyName) LIKE LOWER(CONCAT('%', :keyword, '%'))) OR " +
-           "(:type = 'phone' AND p.phone LIKE CONCAT('%', :keyword, '%')) OR " +
-           "(:type = 'address' AND LOWER(p.address) LIKE LOWER(CONCAT('%', :keyword, '%'))) OR " +
-           "(:type = 'all' AND (LOWER(p.pharmacyName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "p.phone LIKE CONCAT('%', :keyword, '%') OR " +
-           "LOWER(p.address) LIKE LOWER(CONCAT('%', :keyword, '%'))))")
+    @Query(value = "SELECT * FROM Pharmacies ORDER BY PharmacyID OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY", 
+           nativeQuery = true)
+    List<Pharmacy> findPharmaciesPaginated(@Param("offset") int offset, @Param("size") int size);
+    
+    @Query("SELECT COUNT(p) FROM Pharmacy p")
+    long getTotalPharmacyCount();
+    
+    @Query(value = "SELECT * FROM Pharmacies p WHERE " +
+           "(:type = 'all' OR " +
+           "(:type = 'name' AND p.PharmacyName LIKE %:keyword%) OR " +
+           "(:type = 'phone' AND p.Phone LIKE %:keyword%) OR " +
+           "(:type = 'address' AND p.Address LIKE %:keyword%) OR " +
+           "(:type = 'email' AND p.Email LIKE %:keyword%)) " +
+           "ORDER BY p.PharmacyID OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY", 
+           nativeQuery = true)
+    List<Pharmacy> searchPharmaciesPaginated(@Param("keyword") String keyword, 
+                                           @Param("type") String type, 
+                                           @Param("offset") int offset, 
+                                           @Param("size") int size);
+    
+    @Query(value = "SELECT COUNT(*) FROM Pharmacies p WHERE " +
+           "(:type = 'all' OR " +
+           "(:type = 'name' AND p.PharmacyName LIKE %:keyword%) OR " +
+           "(:type = 'phone' AND p.Phone LIKE %:keyword%) OR " +
+           "(:type = 'address' AND p.Address LIKE %:keyword%) OR " +
+           "(:type = 'email' AND p.Email LIKE %:keyword%))", 
+           nativeQuery = true)
+    long getSearchPharmacyCount(@Param("keyword") String keyword, @Param("type") String type);
+    
+    @Query(value = "SELECT * FROM Pharmacies p WHERE " +
+           "(:type = 'all' OR " +
+           "(:type = 'name' AND p.PharmacyName LIKE %:keyword%) OR " +
+           "(:type = 'phone' AND p.Phone LIKE %:keyword%) OR " +
+           "(:type = 'address' AND p.Address LIKE %:keyword%) OR " +
+           "(:type = 'email' AND p.Email LIKE %:keyword%)) " +
+           "ORDER BY p.PharmacyID", 
+           nativeQuery = true)
     List<Pharmacy> searchPharmacies(@Param("keyword") String keyword, @Param("type") String type);
 }
 
