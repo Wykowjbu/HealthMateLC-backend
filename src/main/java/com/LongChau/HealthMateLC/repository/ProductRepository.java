@@ -34,11 +34,11 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     
     // Tìm kiếm với phân trang
     @Query(value = "SELECT * FROM Products p WHERE " +
-           "(:type = 'all' OR " +
            "(:type = 'name' AND p.ProductName LIKE %:keyword%) OR " +
            "(:type = 'type' AND p.ProductType LIKE %:keyword%) OR " +
            "(:type = 'unit' AND p.Unit LIKE %:keyword%) OR " +
-           "(:type = 'description' AND p.Description LIKE %:keyword%)) " +
+           "(:type = 'description' AND p.Description LIKE %:keyword%) OR " +
+           "(:type = 'all' AND (p.ProductName LIKE %:keyword% OR p.ProductType LIKE %:keyword% OR p.Unit LIKE %:keyword% OR p.Description LIKE %:keyword%)) " +
            "ORDER BY p.ProductID OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY", 
            nativeQuery = true)
     List<Product> searchProductsPaginated(@Param("keyword") String keyword, 
@@ -48,11 +48,11 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     
     // Đếm số kết quả tìm kiếm
     @Query(value = "SELECT COUNT(*) FROM Products p WHERE " +
-           "(:type = 'all' OR " +
            "(:type = 'name' AND p.ProductName LIKE %:keyword%) OR " +
            "(:type = 'type' AND p.ProductType LIKE %:keyword%) OR " +
            "(:type = 'unit' AND p.Unit LIKE %:keyword%) OR " +
-           "(:type = 'description' AND p.Description LIKE %:keyword%))", 
+           "(:type = 'description' AND p.Description LIKE %:keyword%) OR " +
+           "(:type = 'all' AND (p.ProductName LIKE %:keyword% OR p.ProductType LIKE %:keyword% OR p.Unit LIKE %:keyword% OR p.Description LIKE %:keyword%))", 
            nativeQuery = true)
     long getSearchProductCount(@Param("keyword") String keyword, @Param("type") String type);
 }
