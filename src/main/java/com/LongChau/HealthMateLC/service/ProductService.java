@@ -2,9 +2,12 @@ package com.LongChau.HealthMateLC.service;
 
 import com.LongChau.HealthMateLC.dto.ProductDTO;
 import com.LongChau.HealthMateLC.model.Product;
+import com.LongChau.HealthMateLC.model.Inventory;
 import com.LongChau.HealthMateLC.repository.ProductRepository;
+import com.LongChau.HealthMateLC.repository.InventoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +17,8 @@ public class ProductService {
     
     @Autowired
     private ProductRepository productRepository;
+    @Autowired
+    private InventoryRepository inventoryRepository;
     
     // Phương thức cho phân trang
     public List<Product> getProductsPaginated(int offset, int size) {
@@ -54,6 +59,7 @@ public class ProductService {
         return productRepository.searchProducts(keyword, type);
     }
 
+    @Transactional
     public Product createProduct(ProductDTO productDTO) {
         // Validate duplicate product name
         if (productRepository.existsByProductName(productDTO.getProductName())) {
@@ -67,7 +73,15 @@ public class ProductService {
         product.setPrice(productDTO.getPrice());
         product.setDescription(productDTO.getDescription());
         
-        return productRepository.save(product);
+        Product savedProduct = productRepository.save(product);
+
+
+        Inventory inventory = new Inventory();
+        inventory.setProduct(savedProduct);
+        inventory.setNumber(productDTO.getQuantity() != null ? productDTO.getQuantity() : 0);
+        inventoryRepository.save(inventory);
+        
+        return savedProduct;
     }
     
 
@@ -125,5 +139,14 @@ public class ProductService {
 
     public boolean existsByName(String productName) {
         return productRepository.findByProductName(productName).isPresent();
+    }
+    
+    /**
+     * Lấy số lượng tồn kho của sản phẩm
+     */
+    public Integer getProductQuantity(Integer productId) {
+        return inventoryRepository.findById(productId)
+            .map(Inventory::getNumber)
+            .orElse(0);
     }
 }

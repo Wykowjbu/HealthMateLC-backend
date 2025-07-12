@@ -5,11 +5,7 @@ import com.LongChau.HealthMateLC.model.Pharmacy;
 import com.LongChau.HealthMateLC.model.UserInformation;
 import com.LongChau.HealthMateLC.model.User;
 import com.LongChau.HealthMateLC.model.Product;
-import com.LongChau.HealthMateLC.service.CustomerService;
-import com.LongChau.HealthMateLC.service.PharmacyService;
-import com.LongChau.HealthMateLC.service.UserInformationService;
-import com.LongChau.HealthMateLC.service.UserService;
-import com.LongChau.HealthMateLC.service.ProductService;
+import com.LongChau.HealthMateLC.service.*;
 import com.LongChau.HealthMateLC.repository.ProductRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +32,8 @@ public class AdminController {
     private UserInformationService userInformationService;
     @Autowired
     private ProductService productService;
+    @Autowired
+    private InventoryService inventoryService;
     @Autowired
     private ProductRepository productRepository;
     @Autowired
@@ -214,7 +212,7 @@ public class AdminController {
         }
 
         try {
-            // Create product using service
+            // Create product using service (service sẽ tự xử lý tồn kho nếu có quantity)
             Product createdProduct = productService.createProduct(productDTO);
 
             return ResponseEntity.ok(Map.of("message", "Thêm sản phẩm thành công"));
@@ -239,6 +237,8 @@ public class AdminController {
             dto.setUnit(p.getUnit());
             dto.setPrice(p.getPrice());
             dto.setDescription(p.getDescription());
+            // Thêm số lượng tồn kho
+            dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
             dtos.add(dto);
         }
         return new ResponseEntity<>(dtos, HttpStatus.OK);
@@ -258,6 +258,8 @@ public class AdminController {
             dto.setUnit(p.getUnit());
             dto.setPrice(p.getPrice());
             dto.setDescription(p.getDescription());
+            // Thêm số lượng tồn kho
+            dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
             return ResponseEntity.ok(dto);
         }
         System.out.println("Product not found with ID: " + id);
@@ -310,6 +312,8 @@ public class AdminController {
             dto.setUnit(p.getUnit());
             dto.setPrice(p.getPrice());
             dto.setDescription(p.getDescription());
+            // Thêm số lượng tồn kho
+            dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
             dtos.add(dto);
         }
         return new ResponseEntity<>(dtos, HttpStatus.OK);
@@ -423,6 +427,40 @@ public class AdminController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @PutMapping("/update-product-quantity")
+    public ResponseEntity<Map<String, String>> updateProductQuantity(
+            @Valid @RequestBody InventoryDTO inventoryDTO,
+            BindingResult bindingResult) {
+        Map<String, String> response = new HashMap<>();
+
+        // Check validation errors from Bean Validation
+        if (bindingResult.hasErrors()) {
+            String errorMessage = bindingResult.getFieldErrors().get(0).getDefaultMessage();
+            response.put("message", errorMessage);
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+
+        try {
+            // Kiểm tra sản phẩm có tồn tại không
+            if (!productService.existsById(inventoryDTO.getProductId())) {
+                response.put("message", "Sản phẩm không tồn tại");
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+            }
+
+            // Cập nhật số lượng
+            inventoryService.updateProductQuantity(inventoryDTO);
+            
+            response.put("message", "Cập nhật số lượng thành công");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            response.put("message", e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            response.put("message", "Lỗi khi cập nhật số lượng: " + e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping("/search-pharmacies")
     public ResponseEntity<List<Map<String, Object>>> searchPharmacies(@RequestParam String keyword, @RequestParam(defaultValue = "all") String type) {
         List<Pharmacy> pharmacies = pharmacyService.searchPharmacies(keyword, type);
@@ -483,6 +521,8 @@ public class AdminController {
             dto.setUnit(p.getUnit());
             dto.setPrice(p.getPrice());
             dto.setDescription(p.getDescription());
+            // Thêm số lượng tồn kho
+            dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
             dtos.add(dto);
         }
         
@@ -571,6 +611,8 @@ public class AdminController {
             dto.setUnit(p.getUnit());
             dto.setPrice(p.getPrice());
             dto.setDescription(p.getDescription());
+            // Thêm số lượng tồn kho
+            dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
             dtos.add(dto);
         }
         

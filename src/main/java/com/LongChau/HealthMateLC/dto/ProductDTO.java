@@ -28,6 +28,9 @@ public class ProductDTO {
     @DecimalMax(value = "999999999", inclusive = true, message = "Giá bán không được quá 999,999,999 VNĐ")
     private BigDecimal price;
 
+    // Thêm trường số lượng tồn kho
+    private Integer quantity;
+
     public ProductDTO() {}
     public ProductDTO(String productName, String productType, String unit, String description, BigDecimal price) {
         this.productName = productName;
