@@ -44,4 +44,8 @@ public class Invoice {
 
     @Column(name = "Status", nullable = false, length = 20)
     private String status;
+
+    // Ghi chú đơn hàng, dùng cho nhắc uống thuốc
+    @Column(name = "Notes", columnDefinition = "nvarchar(max)")
+    private String notes;
 }

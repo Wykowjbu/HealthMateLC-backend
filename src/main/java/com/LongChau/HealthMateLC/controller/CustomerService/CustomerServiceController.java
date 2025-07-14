@@ -1,8 +1,11 @@
 package com.LongChau.HealthMateLC.controller.CustomerService;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,6 +24,7 @@ import com.LongChau.HealthMateLC.dto.CustomerService.FeedbackDTO;
 import com.LongChau.HealthMateLC.dto.CustomerService.PharmacyDTO;
 import com.LongChau.HealthMateLC.dto.CustomerService.SendEmailRequest;
 import com.LongChau.HealthMateLC.model.Feedback;
+import com.LongChau.HealthMateLC.model.Invoice;
 import com.LongChau.HealthMateLC.model.User;
 import com.LongChau.HealthMateLC.model.UserInformation;
 import com.LongChau.HealthMateLC.repository.UserInformationRepository;
@@ -29,6 +33,7 @@ import com.LongChau.HealthMateLC.service.PharmacyService;
 import com.LongChau.HealthMateLC.service.EmailService;
 import com.LongChau.HealthMateLC.service.CustomerMessageService;
 import com.LongChau.HealthMateLC.model.CustomerMessage;
+import com.LongChau.HealthMateLC.service.CustomerService;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -45,6 +50,10 @@ public class CustomerServiceController {
     private EmailService emailService;
     @Autowired
     private CustomerMessageService customerMessageService;
+    @Autowired
+    private CustomerService customerService;
+    @Autowired
+    private com.LongChau.HealthMateLC.repository.InvoiceRepository invoiceRepository;
 
     // #region Pharmacy
     @GetMapping("/pharmacies")
@@ -134,6 +143,12 @@ public class CustomerServiceController {
     // #endregion
 
     // #region Messaging/Email
+    @GetMapping("/messages")
+    public ResponseEntity<List<CustomerMessage>> getAllMessages() {
+        List<CustomerMessage> messages = customerMessageService.getAllMessages();
+        return ResponseEntity.ok(messages);
+    }
+
     @PostMapping("/send-email")
     public ResponseEntity<?> sendEmailToCustomer(@RequestBody SendEmailRequest request, HttpSession session) {
         User user = (User) session.getAttribute("user");
@@ -180,4 +195,106 @@ public class CustomerServiceController {
         }
     }
     // #endregion
+
+    // #region Statistics
+    /**
+     * Đếm tổng số tin nhắn đã gửi
+     */
+    @GetMapping("/stats/messages-sent")
+    public ResponseEntity<Map<String, Long>> getMessagesSentCount() {
+        long count = customerMessageService.countMessages();
+        return ResponseEntity.ok(Map.of("count", count));
+    }
+
+    /**
+     * Đếm số đánh giá cần xử lý (rating <= 3 sao)
+     */
+    @GetMapping("/stats/reviews-pending")
+    public ResponseEntity<Map<String, Long>> getReviewsPendingCount() {
+        long count = feedbackService.countPendingReviews();
+        return ResponseEntity.ok(Map.of("count", count));
+    }
+
+    /**
+     * Đếm tổng số khách hàng đã được phục vụ
+     */
+    @GetMapping("/stats/customers-served")
+    public ResponseEntity<Map<String, Integer>> getCustomersServedCount() {
+        int count = customerService.getNumberOfCustomers();
+        return ResponseEntity.ok(Map.of("count", count));
+    }
+
+    /**
+     * Lấy điểm đánh giá trung bình (từ 1-5) để tính tỷ lệ hài lòng
+     */
+    @GetMapping("/stats/average-rating")
+    public ResponseEntity<Map<String, Double>> getAverageRating() {
+        double avg = feedbackService.getAverageRating();
+        return ResponseEntity.ok(Map.of("average", avg));
+    }
+    // #endregion
+
+    /**
+     * Lấy tất cả hóa đơn đã thanh toán trong 3 ngày gần nhất để nhắc nhở
+     */
+    @GetMapping("/invoices/reminders")
+    public ResponseEntity<List<Map<String, Object>>> getReminderInvoices() {
+        LocalDateTime end = LocalDateTime.now();
+        LocalDateTime start = end.minusDays(3);
+        List<Invoice> invoices = invoiceRepository.findByStatusAndInvoiceDateBetween(
+                "paid", start, end);
+        List<Map<String, Object>> reminders = invoices.stream()
+                .map(inv -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("invoiceId", inv.getInvoiceId());
+                    map.put("customerId", inv.getCustomer().getCustomerId());
+                    map.put("notes", inv.getNotes());
+                    map.put("customerEmail", inv.getCustomer().getEmail());
+                    map.put("customerName", inv.getCustomer().getFullName());
+                    map.put("invoiceDate", inv.getInvoiceDate());
+                    return map;
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(reminders);
+    }
+
+    /**
+     * Gửi nhắc nhở uống thuốc tới tất cả khách hàng có hóa đơn đã thanh toán trong
+     * vòng 3 ngày gần nhất
+     */
+    @PostMapping("/invoices/reminders/send")
+    public ResponseEntity<Map<String, Object>> sendBulkReminders(HttpSession session) {
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized: Please login to send reminders"));
+        }
+        LocalDateTime end = LocalDateTime.now();
+        LocalDateTime start = end.minusDays(3);
+        List<Invoice> invoices = invoiceRepository.findByStatusAndInvoiceDateBetween(
+                "paid", start, end);
+        int sentCount = 0;
+        int failedCount = 0;
+        for (Invoice inv : invoices) {
+            String email = inv.getCustomer().getEmail();
+            if (email == null || email.trim().isEmpty()) {
+                failedCount++;
+                continue;
+            }
+            String name = inv.getCustomer().getFullName();
+            String content = String.format(
+                    "Xin chào %s,\n\nLời nhắc uống thuốc:\n%s\n\nChúc bạn mau khỏe!", name, inv.getNotes());
+            try {
+                emailService.sendSimpleEmail(email, "Nhắc nhở uống thuốc - Long Châu", content);
+                sentCount++;
+            } catch (Exception e) {
+                failedCount++;
+            }
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("total", invoices.size());
+        result.put("sentCount", sentCount);
+        result.put("failedCount", failedCount);
+        return ResponseEntity.ok(result);
+    }
 }

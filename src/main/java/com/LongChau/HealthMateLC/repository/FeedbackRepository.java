@@ -13,4 +13,6 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Integer> {
 
     List<Feedback> findByCustomer_CustomerId(int customerId);
 
+    // Đếm số đánh giá dưới hoặc bằng 3 sao
+    long countByRatingLessThanEqual(Integer rating);
 }

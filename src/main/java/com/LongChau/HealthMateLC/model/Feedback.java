@@ -43,7 +43,7 @@ public class Feedback {
     private User handledByUser;
 
     @Column(name = "HandledDate")
-    private LocalDateTime handledDate;
+    private LocalDateTime HandledDate;
 
     @Column(name = "status", length = 20)
     private String status;
