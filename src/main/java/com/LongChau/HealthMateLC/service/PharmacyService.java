@@ -1,5 +1,6 @@
 package com.LongChau.HealthMateLC.service;
 
+import com.LongChau.HealthMateLC.dto.PharmacyDTO;
 import com.LongChau.HealthMateLC.model.Pharmacy;
 import com.LongChau.HealthMateLC.repository.PharmacyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,4 +25,6 @@ public class PharmacyService {
     public List<Pharmacy> getAllPharmacies() {
         return pharmacyRepository.findAll();
     }
+
+    public List<PharmacyDTO> getAllPharmaciesDTO() { return pharmacyRepository.getAllPharmaciesDTO();}
 }
