@@ -64,15 +64,4 @@ public class AdminController {
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
-
-    @PutMapping("/update-account/{userId}")
-    public ResponseEntity<UserInformationDTO> updateUserInformation(@RequestBody UserInformationDTO userInformationDTO, @PathVariable Integer userId) {
-        UserInformationDTO userInformationDtoResult = userService.updateUserAndUserInformation(userInformationDTO, userId);
-        if (userInformationDtoResult != null) {
-            return new ResponseEntity<>(userInformationDtoResult, HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
-
-
 }
