@@ -1,5 +1,8 @@
 package com.LongChau.HealthMateLC.dto;
 
+import lombok.Data;
+
+@Data
 public class PharmacyDTO {
     private Integer pharmacyId;
     private String pharmacyName;
@@ -16,9 +19,5 @@ public class PharmacyDTO {
         this.address = address;
         this.phone = phone;
         this.email = email;
-    }
-
-    public Integer getPharmacyId() {
-        return pharmacyId;
     }
 }

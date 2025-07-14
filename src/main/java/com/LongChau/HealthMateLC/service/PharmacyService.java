@@ -26,5 +26,7 @@ public class PharmacyService {
         return pharmacyRepository.findAll();
     }
 
-    public List<PharmacyDTO> getAllPharmaciesDTO() { return pharmacyRepository.getAllPharmaciesDTO();}
+    public List<PharmacyDTO> getAllPharmaciesDTO() {
+        return pharmacyRepository.getAllPharmaciesDTO();
+    }
 }

@@ -59,4 +59,14 @@ public class UserService {
     }
 
     public List<User> getAllUser(){return userRepository.findAll(); };
+
+    public User findUserById(Integer userId) {
+        return userRepository.findById(userId).orElse(null);
+    }
+
+    public void resetPassword(Integer userId, String newPassword) {
+        User user = userRepository.findById(userId).orElse(null);
+        user.setPassword(newPassword);
+        userRepository.save(user);
+    }
 }
