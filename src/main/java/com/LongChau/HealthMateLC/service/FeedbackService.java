@@ -12,6 +12,7 @@ import com.LongChau.HealthMateLC.repository.FeedbackRepository;
 import com.LongChau.HealthMateLC.dto.CustomerService.FeedbackDTO;
 import com.LongChau.HealthMateLC.dto.CustomerService.PharmacyDTO;
 import com.LongChau.HealthMateLC.model.Feedback;
+import com.LongChau.HealthMateLC.model.User;
 
 @Service
 public class FeedbackService {
@@ -33,7 +34,7 @@ public class FeedbackService {
         dto.setContent(entity.getComment());
         dto.setRating(entity.getRating());
         dto.setStatus(entity.getStatus());
-        dto.setCreatedAt(entity.getHandledDate());
+        dto.setCreatedAt(entity.getFeedbackDate());
 
         // Chuyển đổi Pharmacy
         if (entity.getPharmacy() != null) {
@@ -92,16 +93,34 @@ public class FeedbackService {
             feedback.setStatus(status);
             if (("APPROVED".equals(status) || "REJECTED".equals(status)) && handledByUserId != null) {
                 // Validate user
-                Optional<com.LongChau.HealthMateLC.model.User> userOpt = userRepository.findById(handledByUserId);
+                Optional<User> userOpt = userRepository.findById(handledByUserId);
                 if (userOpt.isEmpty()) {
                     throw new IllegalArgumentException("User không tồn tại");
                 }
                 feedback.setHandledByUser(userOpt.get());
-                feedback.setHandledDate(LocalDateTime.now());
+                feedback.setHandledDate(LocalDateTime.now());  
             }
             return feedbackRepository.save(feedback);
         }
         return null;
+    }
+
+    /**
+     * Đếm số đánh giá cần xử lý (rating <= 3)
+     */
+    public long countPendingReviews() {
+        return feedbackRepository.countByRatingLessThanEqual(3);
+    }
+
+    /**
+     * Tính rating trung bình từ tất cả đánh giá
+     */
+    public double getAverageRating() {
+        List<Feedback> all = feedbackRepository.findAll();
+        if (all.isEmpty())
+            return 0.0;
+        double sum = all.stream().mapToInt(Feedback::getRating).sum();
+        return sum / all.size();
     }
 
 }
