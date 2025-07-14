@@ -1,6 +1,7 @@
 package com.LongChau.HealthMateLC.controller.auth;
 
 import com.LongChau.HealthMateLC.config.RedirectConfig;
+import com.LongChau.HealthMateLC.model.Pharmacy;
 import com.LongChau.HealthMateLC.model.User;
 import com.LongChau.HealthMateLC.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +36,20 @@ public class Login {
         Map<String, Object> responce = new HashMap<>();
         try {
             User user = userService.findUserByUsername(loginRequest.getUsername());
-            if (user != null
+            Pharmacy pharmacy = userService.findPharmacyByUsername(loginRequest.getUsername()); ;
+            if (!user.getIsActive()){
+                responce.put("success", false);
+                responce.put("message", "Tài khoản của bạn đã bị khóa, vui lòng liên hệ quản trị viên để biết thêm chi tiết.");
+                return ResponseEntity.badRequest().body(responce);
+            }
+
+            // Check pharmacy active status (null pharmacy allowed)
+            if (pharmacy != null && !pharmacy.getIsActive()) {
+                responce.put("success", false);
+                responce.put("message", "Nhà thuốc của bạn hiện không hoạt động.");
+                return ResponseEntity.badRequest().body(responce);
+            }
+            else if (user != null
                     && user.getPassword().equals(loginRequest.getPassword())
                     && user.getUsername().equals(loginRequest.getUsername())) {
 

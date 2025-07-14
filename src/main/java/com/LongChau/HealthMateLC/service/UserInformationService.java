@@ -20,4 +20,5 @@ public class UserInformationService {
     public List<UserInformationDTO> getEmployeeAndManagerByPharmacyId(int pharmacyId) {
         return userInformationRepository.findEmployeeAndManagerByPharmacyId(pharmacyId);
     }
+    
 }
