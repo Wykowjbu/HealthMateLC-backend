@@ -52,6 +52,7 @@ public class Login {
                 response.put("redirectUrl", redirectConfig.getRedirectUrl(user.getRole()));
                 response.put("success", true);
                 response.put("message", "Đăng nhập thành công!");
+                response.put("userId", user.getUserId());
                 return ResponseEntity.ok(response);
             } else {
                 response.put("success", false);

@@ -9,4 +9,6 @@ import java.util.List;
 
 @Repository
 public interface InvoiceDetailRepository extends JpaRepository<InvoiceDetail, Integer> {
+    @Query("SELECT id FROM InvoiceDetail id WHERE id.invoice.invoiceId = :invoiceId")
+    List<InvoiceDetail> findByInvoiceId(@Param("invoiceId") Integer invoiceId);
 }
