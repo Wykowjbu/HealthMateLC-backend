@@ -66,10 +66,6 @@
                 user.setRole(userInformationDTO.getRole());
                 user.setIsActive(userInformationDTO.isActive());
                 userRepository.save(user);
-
-                // Assuming UserInformation is a separate entity that needs to be updated
-                // You would need to implement the logic to update UserInformation here
-                // For example:
                 UserInformation userInfo = userInformationRepository.findById(userId).orElse(null);
                 if (userInfo != null) {
                     userInfo.setFullName(userInformationDTO.getFullName());
@@ -81,5 +77,5 @@
             }
             return null;
         }
-
     }
+

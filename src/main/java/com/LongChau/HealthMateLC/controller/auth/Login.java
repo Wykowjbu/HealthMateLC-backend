@@ -1,6 +1,7 @@
 package com.LongChau.HealthMateLC.controller.auth;
 
 import com.LongChau.HealthMateLC.config.RedirectConfig;
+import com.LongChau.HealthMateLC.model.Pharmacy;
 import com.LongChau.HealthMateLC.model.User;
 import com.LongChau.HealthMateLC.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +29,7 @@ public class Login {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> loginRequest) {
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> loginRequest, HttpSession session) {
         Map<String, Object> response = new HashMap<>();
         try {
             String username = loginRequest.get("username");
@@ -49,9 +50,28 @@ public class Login {
 
             User user = userOpt.get();
             if (password.equals(user.getPassword())) { // So sánh plain text tạm thời
+                // Set currentUser vào session
+                session.setAttribute("currentUser", user);
+
+                // Lấy thông tin bổ sung từ UserInformation nếu có
+                String fullName = null;
+                String email = null;
+                String phone = null;
+                if (user.getUserInformation() != null) {
+                    fullName = user.getUserInformation().getFullName();
+                    email = user.getUserInformation().getEmail();
+                    phone = user.getUserInformation().getPhone();
+                }
+
                 response.put("redirectUrl", redirectConfig.getRedirectUrl(user.getRole()));
                 response.put("success", true);
                 response.put("message", "Đăng nhập thành công!");
+                response.put("userId", user.getUserId());
+                response.put("username", user.getUsername());
+                response.put("role", user.getRole());
+                response.put("fullName", fullName);
+                response.put("email", email);
+                response.put("phone", phone);
                 return ResponseEntity.ok(response);
             } else {
                 response.put("success", false);
@@ -87,7 +107,7 @@ public class Login {
 
             response.put("success", true);
             response.put("message", "Đăng xuất thành công!");
-            response.put("redirectUrl", "/HealthMateLC/index.html"); // Chuyển hướng về trang đăng nhập
+            response.put("redirectUrl", "index.html"); // Chuyển hướng về trang đăng nhập
 
             return ResponseEntity.ok()
                     .header("Set-Cookie", "JSESSIONID=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Domain=localhost")

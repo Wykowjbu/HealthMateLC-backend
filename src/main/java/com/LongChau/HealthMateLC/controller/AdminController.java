@@ -7,6 +7,7 @@ import com.LongChau.HealthMateLC.model.User;
 import com.LongChau.HealthMateLC.model.Product;
 import com.LongChau.HealthMateLC.service.*;
 import com.LongChau.HealthMateLC.repository.ProductRepository;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -597,7 +598,7 @@ public class AdminController {
         Map<String, Object> response = new HashMap<>();
         int offset = page * size;
         
-        // Lấy kết quả tìm kiếm với phân trang
+
         long totalProducts = productService.getSearchProductCount(keyword, type);
         List<Product> products = productService.searchProductsPaginated(keyword, type, offset, size);
         
@@ -673,5 +674,75 @@ public class AdminController {
         response.put("pageSize", size);
         
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<?> getAdminProfile(HttpSession session) {
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Unauthorized access");
+            errorResponse.put("message", "Phiên đăng nhập đã hết hạn");
+            return ResponseEntity.status(401).body(errorResponse);
+        }
+        if (!"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Unauthorized access");
+            errorResponse.put("message", "Bạn không có quyền truy cập");
+            return ResponseEntity.status(403).body(errorResponse);
+        }
+        User admin = userRepository.findById(currentUser.getUserId()).orElse(null);
+        if (admin == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "User not found");
+            errorResponse.put("message", "Không tìm thấy thông tin người dùng");
+            return ResponseEntity.status(404).body(errorResponse);
+        }
+        UserInformation userInfo = userInformationService.findUserInformationByUserId(admin.getUserId());
+        Map<String, Object> profile = new HashMap<>();
+        profile.put("role", admin.getRole());
+        if (userInfo != null) {
+            profile.put("fullName", userInfo.getFullName() != null ? userInfo.getFullName() : admin.getUsername());
+        } else {
+            profile.put("fullName", admin.getUsername());
+        }
+        return ResponseEntity.ok(profile);
+    }
+
+    @GetMapping("/showprofile")
+    public ResponseEntity<?> showAdminProfile(HttpSession session) {
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Unauthorized access");
+            errorResponse.put("message", "Phiên đăng nhập đã hết hạn");
+            return ResponseEntity.status(401).body(errorResponse);
+        }
+        if (!"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Unauthorized access");
+            errorResponse.put("message", "Bạn không có quyền truy cập");
+            return ResponseEntity.status(403).body(errorResponse);
+        }
+        User admin = userRepository.findById(currentUser.getUserId()).orElse(null);
+        if (admin == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "User not found");
+            errorResponse.put("message", "Không tìm thấy thông tin người dùng");
+            return ResponseEntity.status(404).body(errorResponse);
+        }
+        UserInformation userInfo = userInformationService.findUserInformationByUserId(admin.getUserId());
+        Map<String, Object> profile = new HashMap<>();
+        profile.put("role", admin.getRole());
+        if (userInfo != null) {
+            profile.put("fullName", userInfo.getFullName() != null ? userInfo.getFullName() : admin.getUsername());
+            profile.put("phone", userInfo.getPhone() != null ? userInfo.getPhone() : "Chưa cập nhật");
+            profile.put("email", userInfo.getEmail() != null ? userInfo.getEmail() : "Chưa cập nhật");
+        } else {
+            profile.put("fullName", admin.getUsername());
+            profile.put("phone", "Chưa cập nhật");
+            profile.put("email", "Chưa cập nhật");
+        }
+        return ResponseEntity.ok(profile);
     }
 }
