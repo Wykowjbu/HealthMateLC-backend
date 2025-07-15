@@ -17,4 +17,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Integer> {
                                                      @Param("endDate") LocalDateTime endDate);
     @Query("SELECT i FROM Invoice i WHERE i.totalAmount >= :minAmount ORDER BY i.totalAmount DESC")
     List<Invoice> findHighValueInvoices(@Param("minAmount") BigDecimal minAmount);
+
+    @Query("SELECT DISTINCT i FROM Invoice i LEFT JOIN FETCH i.invoiceDetails id LEFT JOIN FETCH id.product WHERE i.customer.customerId = :customerId ORDER BY i.invoiceDate DESC")
+    List<Invoice> findByCustomerId(@Param("customerId") Integer customerId);
 }
