@@ -2,6 +2,7 @@
 
     import com.LongChau.HealthMateLC.dto.UserDTO;
     import com.LongChau.HealthMateLC.dto.UserInformationDTO;
+    import com.LongChau.HealthMateLC.model.Pharmacy;
     import com.LongChau.HealthMateLC.model.User;
     import com.LongChau.HealthMateLC.model.UserInformation;
     import com.LongChau.HealthMateLC.repository.UserInformationRepository;
@@ -76,6 +77,12 @@
                 return userInformationDTO; // Return the updated DTO
             }
             return null;
+        }
+        public Pharmacy findPharmacyByUsername(String username) {
+            User user = findUserByUsername(username);
+            if (user == null) return null;
+            UserInformation info = user.getUserInformation();
+            return (info != null) ? info.getPharmacy() : null;
         }
     }
 

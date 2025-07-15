@@ -450,7 +450,7 @@ public class AdminController {
 
             // Cập nhật số lượng
             inventoryService.updateProductQuantity(inventoryDTO);
-            
+
             response.put("message", "Cập nhật số lượng thành công");
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (RuntimeException e) {
@@ -500,18 +500,18 @@ public class AdminController {
     public ResponseEntity<Map<String, Object>> listProductsPaginated(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         Map<String, Object> response = new HashMap<>();
-        
+
         // Tính offset
         int offset = page * size;
-        
+
         // Lấy tổng số sản phẩm
         long totalProducts = productService.getTotalProductCount();
-        
+
         // Lấy sản phẩm theo phân trang
         List<Product> products = productService.getProductsPaginated(offset, size);
-        
+
         // Convert to DTO
         List<ProductDTO> dtos = new ArrayList<>();
         for (Product p : products) {
@@ -526,13 +526,13 @@ public class AdminController {
             dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
             dtos.add(dto);
         }
-        
+
         response.put("products", dtos);
         response.put("totalItems", totalProducts);
         response.put("totalPages", (int) Math.ceil((double) totalProducts / size));
         response.put("currentPage", page);
         response.put("pageSize", size);
-        
+
         return ResponseEntity.ok(response);
     }
 
@@ -540,18 +540,18 @@ public class AdminController {
     public ResponseEntity<Map<String, Object>> listPharmaciesPaginated(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         Map<String, Object> response = new HashMap<>();
-        
+
         // Tính offset
         int offset = page * size;
-        
+
         // Lấy tổng số nhà thuốc
         long totalPharmacies = pharmacyService.getTotalPharmacyCount();
-        
+
         // Lấy nhà thuốc theo phân trang
         List<Pharmacy> pharmacies = pharmacyService.getPharmaciesPaginated(offset, size);
-        
+
         // Convert to Map để tránh Hibernate proxy
         List<Map<String, Object>> pharmacyMaps = new ArrayList<>();
         for (Pharmacy p : pharmacies) {
@@ -562,7 +562,7 @@ public class AdminController {
             map.put("phone", p.getPhone());
             map.put("email", p.getEmail());
             map.put("isActive", p.getIsActive());
-            
+
             // Lấy manager
             List<UserInformation> managers = userInformationService.findManagersByPharmacyId(p.getPharmacyId());
             String managerNames = "";
@@ -570,7 +570,7 @@ public class AdminController {
                 List<String> names = new ArrayList<>();
                 for (UserInformation manager : managers) {
                     String name = (manager.getFullName() != null && !manager.getFullName().isBlank())
-                        ? manager.getFullName() : manager.getUser().getUsername();
+                            ? manager.getFullName() : manager.getUser().getUsername();
                     names.add(name);
                 }
                 managerNames = String.join(", ", names);
@@ -578,13 +578,13 @@ public class AdminController {
             map.put("manager", managerNames.isEmpty() ? "Chưa gán" : managerNames);
             pharmacyMaps.add(map);
         }
-        
+
         response.put("pharmacies", pharmacyMaps);
         response.put("totalItems", totalPharmacies);
         response.put("totalPages", (int) Math.ceil((double) totalPharmacies / size));
         response.put("currentPage", page);
         response.put("pageSize", size);
-        
+
         return ResponseEntity.ok(response);
     }
 
@@ -594,14 +594,14 @@ public class AdminController {
             @RequestParam(defaultValue = "all") String type,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         Map<String, Object> response = new HashMap<>();
         int offset = page * size;
-        
+
 
         long totalProducts = productService.getSearchProductCount(keyword, type);
         List<Product> products = productService.searchProductsPaginated(keyword, type, offset, size);
-        
+
         // Convert to DTO
         List<ProductDTO> dtos = new ArrayList<>();
         for (Product p : products) {
@@ -616,13 +616,13 @@ public class AdminController {
             dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
             dtos.add(dto);
         }
-        
+
         response.put("products", dtos);
         response.put("totalItems", totalProducts);
         response.put("totalPages", (int) Math.ceil((double) totalProducts / size));
         response.put("currentPage", page);
         response.put("pageSize", size);
-        
+
         return ResponseEntity.ok(response);
     }
 
@@ -632,14 +632,14 @@ public class AdminController {
             @RequestParam(defaultValue = "all") String type,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         Map<String, Object> response = new HashMap<>();
         int offset = page * size;
-        
+
         // Lấy kết quả tìm kiếm với phân trang
         long totalPharmacies = pharmacyService.getSearchPharmacyCount(keyword, type);
         List<Pharmacy> pharmacies = pharmacyService.searchPharmaciesPaginated(keyword, type, offset, size);
-        
+
         // Convert to Map
         List<Map<String, Object>> result = new ArrayList<>();
         for (Pharmacy p : pharmacies) {
@@ -650,7 +650,7 @@ public class AdminController {
             map.put("phone", p.getPhone());
             map.put("email", p.getEmail());
             map.put("isActive", p.getIsActive());
-            
+
             // Lấy manager
             List<UserInformation> managers = userInformationService.findManagersByPharmacyId(p.getPharmacyId());
             String managerNames = "";
@@ -658,7 +658,7 @@ public class AdminController {
                 List<String> names = new ArrayList<>();
                 for (UserInformation manager : managers) {
                     String name = (manager.getFullName() != null && !manager.getFullName().isBlank())
-                        ? manager.getFullName() : manager.getUser().getUsername();
+                            ? manager.getFullName() : manager.getUser().getUsername();
                     names.add(name);
                 }
                 managerNames = String.join(", ", names);
@@ -666,13 +666,13 @@ public class AdminController {
             map.put("manager", managerNames.isEmpty() ? "Chưa gán" : managerNames);
             result.add(map);
         }
-        
+
         response.put("pharmacies", result);
         response.put("totalItems", totalPharmacies);
         response.put("totalPages", (int) Math.ceil((double) totalPharmacies / size));
         response.put("currentPage", page);
         response.put("pageSize", size);
-        
+
         return ResponseEntity.ok(response);
     }
 
