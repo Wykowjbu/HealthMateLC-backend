@@ -92,7 +92,7 @@ public class EmployeeController {
         return ResponseEntity.ok(schedules);
     }
 
-    @GetMapping("/lich-su-don-hang")
+    @GetMapping("/lich-su-don-hang-khach-hang/{customerId}")
     public ResponseEntity<List<Invoice>> getOrderHistoryByCustomerId(@RequestParam Integer customerId) {
         List<Invoice> orderHistory = invoiceService.getOrderHistoryByCustomerId(customerId);
         return ResponseEntity.ok(orderHistory);
