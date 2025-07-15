@@ -4,11 +4,13 @@ import com.LongChau.HealthMateLC.dto.UserInformationDTO;
 import com.LongChau.HealthMateLC.model.User;
 import com.LongChau.HealthMateLC.model.UserInformation;
 import com.LongChau.HealthMateLC.model.Pharmacy;
+import com.LongChau.HealthMateLC.dto.EmployeeInfoDTO;
 import com.LongChau.HealthMateLC.repository.UserInformationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserInformationService {
@@ -54,5 +56,25 @@ public class UserInformationService {
 
     public boolean existsByEmail(String email) {
         return userInformationRepository.existsByEmail(email);
+    }
+
+    public EmployeeInfoDTO getEmployeeInfoById(Integer userId) {
+        Optional<UserInformation> userInfoOptional = userInformationRepository.findById(userId);
+
+        if (userInfoOptional.isPresent()) {
+            UserInformation userInfo = userInfoOptional.get();
+            String pharmacyName = userInfo.getPharmacy() != null ? userInfo.getPharmacy().getPharmacyName() : null;
+
+            return new EmployeeInfoDTO(
+                    userInfo.getUserId(),
+                    userInfo.getFullName(),
+                    userInfo.getPhone(),
+                    userInfo.getEmail(),
+                    pharmacyName,
+                    userInfo.getAssignedDate()
+            );
+        }
+
+        return null;
     }
 }
