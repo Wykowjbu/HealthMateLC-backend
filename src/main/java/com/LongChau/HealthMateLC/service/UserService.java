@@ -1,7 +1,9 @@
 package com.LongChau.HealthMateLC.service;
 
 import com.LongChau.HealthMateLC.dto.UserInformationDTO;
+import com.LongChau.HealthMateLC.model.Pharmacy;
 import com.LongChau.HealthMateLC.model.User;
+import com.LongChau.HealthMateLC.model.UserInformation;
 import com.LongChau.HealthMateLC.model.UserInformation;
 import com.LongChau.HealthMateLC.repository.UserInformationRepository;
 import com.LongChau.HealthMateLC.repository.UserRepository;
@@ -52,6 +54,16 @@ public class UserService {
 
     public User findUserByUsername(String username) {
         return userRepository.findUserByUsername(username);
+    }
+
+    /**
+     * Find the pharmacy associated with a user via UserInformation
+     */
+    public Pharmacy findPharmacyByUsername(String username) {
+        User user = findUserByUsername(username);
+        if (user == null) return null;
+        UserInformation info = user.getUserInformation();
+        return (info != null) ? info.getPharmacy() : null;
     }
 
     public int countUserByRole(String role) {

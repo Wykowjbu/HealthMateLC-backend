@@ -34,3 +34,4 @@ build/
 
 ## local configuration files
 /src/main/resources/local-application.properties
+src/main/resources/application.properties

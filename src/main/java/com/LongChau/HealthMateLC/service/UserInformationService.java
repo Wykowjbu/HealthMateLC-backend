@@ -40,7 +40,6 @@ public class UserInformationService {
                     userInfo.getAssignedDate()
             );
         }
-
         return null;
     }
 }
