@@ -27,4 +27,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Integer> {
 
     // Find invoices with status and between dates
     List<Invoice> findByStatusAndInvoiceDateBetween(String status, LocalDateTime startDate, LocalDateTime endDate);
+
+    @Query("SELECT DISTINCT i FROM Invoice i LEFT JOIN FETCH i.invoiceDetails id LEFT JOIN FETCH id.product WHERE i.customer.customerId = :customerId ORDER BY i.invoiceDate DESC")
+    List<Invoice> findByCustomerId(@Param("customerId") Integer customerId);
 }

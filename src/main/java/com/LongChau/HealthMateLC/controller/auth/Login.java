@@ -60,7 +60,14 @@ public class Login {
                 responce.put("success", true);
                 responce.put("message", "Đăng nhập thành công!");
 
-                return ResponseEntity.ok(responce);
+
+            User user = userOpt.get();
+            if (password.equals(user.getPassword())) { // So sánh plain text tạm thời
+                response.put("redirectUrl", redirectConfig.getRedirectUrl(user.getRole()));
+                response.put("success", true);
+                response.put("message", "Đăng nhập thành công!");
+                response.put("userId", user.getUserId());
+                return ResponseEntity.ok(response);
             } else {
                 responce.put("success", false);
                 responce.put("message", "Tên Đăng Nhập Hoặc Mật Khẩu Không Chính Xác! ");
