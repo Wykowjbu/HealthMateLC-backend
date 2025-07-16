@@ -31,4 +31,7 @@ public class Pharmacy {
 
     @Column(name = "CreatedDate")
     private LocalDateTime createdDate = LocalDateTime.now();
+
+    @Column(name = "IsActive")
+    private Boolean isActive = true;
 }
