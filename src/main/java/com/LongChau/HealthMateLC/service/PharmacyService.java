@@ -70,10 +70,6 @@ public class PharmacyService {
             .orElseThrow(() -> new EntityNotFoundException("Pharmacy not found"));
         return toDTO(pharmacy);
     }
-
-}
-
-
     public boolean existsByPhone(String phone) {
         return pharmacyRepository.existsByPhone(phone);
     }

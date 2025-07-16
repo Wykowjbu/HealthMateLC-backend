@@ -41,16 +41,6 @@ import org.springframework.stereotype.Service;
     /**
      * Find the pharmacy associated with a user via UserInformation
      */
-    public Pharmacy findPharmacyByUsername(String username) {
-        User user = findUserByUsername(username);
-        if (user == null) return null;
-        UserInformation info = user.getUserInformation();
-        return (info != null) ? info.getPharmacy() : null;
-    }
-
-    public int countUserByRole(String role) {
-        return userRepository.findUsersByRole(role).size();
-    }
 
         public List<User> getAllUser() {
             return userRepository.findAll();
