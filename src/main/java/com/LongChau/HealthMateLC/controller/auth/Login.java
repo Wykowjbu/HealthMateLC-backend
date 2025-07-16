@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -32,21 +33,21 @@ public class Login {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody User loginRequest, HttpSession session) {
-        Map<String, Object> responce = new HashMap<>();
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> loginRequest) {
+        Map<String, Object> response = new HashMap<>();
         try {
             User user = userService.findUserByUsername(loginRequest.getUsername());
             Pharmacy pharmacy = userService.findPharmacyByUsername(loginRequest.getUsername()); ;
             if (!user.getIsActive()){
-                responce.put("success", false);
-                responce.put("message", "Tài khoản của bạn đã bị khóa, vui lòng liên hệ quản trị viên để biết thêm chi tiết.");
+                response.put("success", false);
+                response.put("message", "Tài khoản của bạn đã bị khóa, vui lòng liên hệ quản trị viên để biết thêm chi tiết.");
                 return ResponseEntity.badRequest().body(responce);
             }
 
             // Check pharmacy active status (null pharmacy allowed)
             if (pharmacy != null && !pharmacy.getIsActive()) {
-                responce.put("success", false);
-                responce.put("message", "Nhà thuốc của bạn hiện không hoạt động.");
+                response.put("success", false);
+                response.put("message", "Nhà thuốc của bạn hiện không hoạt động.");
                 return ResponseEntity.badRequest().body(responce);
             }
             else if (user != null
@@ -56,21 +57,21 @@ public class Login {
                 // Lưu user vào session
                 session.setAttribute("user", user);
 
-                responce.put("redirectUrl", redirectConfig.getRedirectUrl(user.getRole()));
-                responce.put("success", true);
-                responce.put("message", "Đăng nhập thành công!");
+                response.put("redirectUrl", redirectConfig.getRedirectUrl(user.getRole()));
+                response.put("success", true);
+                response.put("message", "Đăng nhập thành công!");
 
-                return ResponseEntity.ok(responce);
+                return ResponseEntity.ok(response);
             } else {
-                responce.put("success", false);
-                responce.put("message", "Tên Đăng Nhập Hoặc Mật Khẩu Không Chính Xác! ");
-                return ResponseEntity.badRequest().body(responce);
+                response.put("success", false);
+                response.put("message", "Tên đăng nhập hoặc mật khẩu không chính xác!");
+                return ResponseEntity.badRequest().body(response);
             }
         } catch (Exception e) {
-            System.err.println("Login error " + e.getMessage());
-            responce.put("success", false);
-            responce.put("message", "Có Lỗi Xảy Ra " + e.getMessage());
-            return ResponseEntity.internalServerError().body(responce);
+            System.err.println("Login error: " + e.getMessage());
+            response.put("success", false);
+            response.put("message", "Có lỗi xảy ra: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
         }
     }
 }
