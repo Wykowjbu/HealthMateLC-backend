@@ -12,11 +12,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -33,26 +33,25 @@ public class Login {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> loginRequest) {
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> loginRequest, HttpServletRequest request) {
         Map<String, Object> response = new HashMap<>();
+        HttpSession session = request.getSession();
         try {
-            User user = userService.findUserByUsername(loginRequest.getUsername());
-            Pharmacy pharmacy = userService.findPharmacyByUsername(loginRequest.getUsername()); ;
+            User user = userService.findUserByUsername(loginRequest.get("username"));
+            Pharmacy pharmacy = userService.findPharmacyByUsername(loginRequest.get("username"));
             if (!user.getIsActive()){
                 response.put("success", false);
                 response.put("message", "Tài khoản của bạn đã bị khóa, vui lòng liên hệ quản trị viên để biết thêm chi tiết.");
-                return ResponseEntity.badRequest().body(responce);
+                return ResponseEntity.badRequest().body(response);
             }
 
             // Check pharmacy active status (null pharmacy allowed)
             if (pharmacy != null && !pharmacy.getIsActive()) {
                 response.put("success", false);
                 response.put("message", "Nhà thuốc của bạn hiện không hoạt động.");
-                return ResponseEntity.badRequest().body(responce);
+                return ResponseEntity.badRequest().body(response);
             }
-            else if (user != null
-                    && user.getPassword().equals(loginRequest.getPassword())
-                    && user.getUsername().equals(loginRequest.getUsername())) {
+            else if (user.getPassword().equals(loginRequest.get("password"))) {
 
                 // Lưu user vào session
                 session.setAttribute("user", user);
