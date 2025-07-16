@@ -93,18 +93,7 @@
 			<optional>true</optional>
 		</dependency>
 
-		
-		<!-- Spring Boot Mail for email sending -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
-        </dependency>
 
-		<!-- Spring Security -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
 
 	</dependencies>
 
