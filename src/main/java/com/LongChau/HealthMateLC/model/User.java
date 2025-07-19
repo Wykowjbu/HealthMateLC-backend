@@ -34,4 +34,18 @@ public class User {
 
     @Column(name = "CreatedDate")
     private LocalDateTime createdDate = LocalDateTime.now();
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private UserInformation userInformation;
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "userId=" + userId +
+                ", username='" + username + '\'' +
+                ", role='" + role + '\'' +
+                ", isActive=" + isActive +
+                ", createdDate=" + createdDate +
+                '}';
+    }
 }
