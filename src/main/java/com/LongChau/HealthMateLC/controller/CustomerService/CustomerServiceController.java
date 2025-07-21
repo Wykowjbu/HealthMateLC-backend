@@ -23,6 +23,7 @@ import com.LongChau.HealthMateLC.dto.CustomerService.UserInformationCsDTO;
 import com.LongChau.HealthMateLC.dto.CustomerService.FeedbackDTO;
 import com.LongChau.HealthMateLC.dto.CustomerService.PharmacyDTO;
 import com.LongChau.HealthMateLC.dto.CustomerService.SendEmailRequest;
+import com.LongChau.HealthMateLC.dto.FeedbackRequest;
 import com.LongChau.HealthMateLC.model.Feedback;
 import com.LongChau.HealthMateLC.model.Invoice;
 import com.LongChau.HealthMateLC.model.User;
@@ -32,6 +33,7 @@ import com.LongChau.HealthMateLC.service.FeedbackService;
 import com.LongChau.HealthMateLC.service.PharmacyService;
 import com.LongChau.HealthMateLC.service.EmailService;
 import com.LongChau.HealthMateLC.service.CustomerMessageService;
+import com.LongChau.HealthMateLC.model.Customer;
 import com.LongChau.HealthMateLC.model.CustomerMessage;
 import com.LongChau.HealthMateLC.service.CustomerService;
 
@@ -119,6 +121,13 @@ public class CustomerServiceController {
         } else {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @PostMapping("/reviews")
+    public ResponseEntity<FeedbackDTO> createFeedback(@RequestBody FeedbackRequest request) {
+        Feedback feedback = feedbackService.createFeedback(request);
+        FeedbackDTO dto = feedbackService.toDTO(feedback);
+        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
     // #endregion
 
@@ -297,4 +306,15 @@ public class CustomerServiceController {
         result.put("failedCount", failedCount);
         return ResponseEntity.ok(result);
     }
+
+    // #region Customers
+    /**
+     * Lấy tất cả khách hàng
+     */
+    @GetMapping("/customers")
+    public ResponseEntity<List<com.LongChau.HealthMateLC.model.Customer>> getAllCustomers() {
+        List<Customer> customers = customerService.getAll();
+        return ResponseEntity.ok(customers);
+    }
+    // #endregion
 }

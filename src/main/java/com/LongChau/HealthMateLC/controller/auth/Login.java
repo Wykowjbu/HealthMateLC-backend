@@ -36,10 +36,12 @@ public class Login {
         Map<String, Object> responce = new HashMap<>();
         try {
             User user = userService.findUserByUsername(loginRequest.getUsername());
-            Pharmacy pharmacy = userService.findPharmacyByUsername(loginRequest.getUsername()); ;
-            if (!user.getIsActive()){
+            Pharmacy pharmacy = userService.findPharmacyByUsername(loginRequest.getUsername());
+            ;
+            if (!user.getIsActive()) {
                 responce.put("success", false);
-                responce.put("message", "Tài khoản của bạn đã bị khóa, vui lòng liên hệ quản trị viên để biết thêm chi tiết.");
+                responce.put("message",
+                        "Tài khoản của bạn đã bị khóa, vui lòng liên hệ quản trị viên để biết thêm chi tiết.");
                 return ResponseEntity.badRequest().body(responce);
             }
 
@@ -48,8 +50,7 @@ public class Login {
                 responce.put("success", false);
                 responce.put("message", "Nhà thuốc của bạn hiện không hoạt động.");
                 return ResponseEntity.badRequest().body(responce);
-            }
-            else if (user != null
+            } else if (user != null
                     && user.getPassword().equals(loginRequest.getPassword())
                     && user.getUsername().equals(loginRequest.getUsername())) {
 
