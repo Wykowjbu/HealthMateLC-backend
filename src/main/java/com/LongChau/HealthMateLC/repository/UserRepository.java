@@ -16,6 +16,9 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     User findUserByUsername(String username);
 
+    @Query("SELECT DISTINCT u.role FROM User u")
+    List<String> getDistinctRoles();
+  
     Optional<User> findByUsername(String username); // Thay User bằng Optional<User>
 
     List<User> findByRole(String role);
@@ -26,4 +29,5 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     Optional<User> findActiveUserByUsername(@Param("username") String username);
 
     boolean existsByUsername(String username);
+
 }
