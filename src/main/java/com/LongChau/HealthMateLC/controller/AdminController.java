@@ -74,6 +74,7 @@ public class AdminController {
         Map<String, Object> map1 = new HashMap<>();
         pharmacies.forEach(pharmacy -> {
             List<UserInformationDTO> listUser = userInformationService.getEmployeeAndManagerByPharmacyId(pharmacy.getPharmacyId());
+            System.out.println(listUser);
             map1.put(String.valueOf(pharmacy.getPharmacyId()), listUser);
         });
         map.put("listUsersByPharmacy", map1);
