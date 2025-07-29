@@ -152,6 +152,7 @@ public class FeedbackService {
         feedback.setInvoice(invoice);
         feedback.setRating(request.getRating());
         feedback.setComment(request.getComment());
+        feedback.setStatus("REJECTED"); // Ensure status is always set
         return feedbackRepository.save(feedback);
     }
 

@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,6 +42,7 @@ import jakarta.servlet.http.HttpSession;
 
 @RestController
 @RequestMapping("/customer-service")
+@CrossOrigin(origins = { "http://127.0.0.1:5500", "http://localhost:8080" }, allowCredentials = "true")
 public class CustomerServiceController {
     @Autowired
     private PharmacyService pharmacyService;
@@ -112,7 +114,7 @@ public class CustomerServiceController {
             }
         }
         if (status == null) {
-            return ResponseEntity.badRequest().build();
+            status = "pending";
         }
 
         Feedback updatedFeedback = feedbackService.updateFeedbackStatus(id, status, handledByUserId);
@@ -134,7 +136,7 @@ public class CustomerServiceController {
     // #region User Information
     @GetMapping("/user/current")
     public ResponseEntity<UserInformationCsDTO> getCurrentUser(HttpSession session) {
-        User user = (User) session.getAttribute("user");
+        User user = (User) session.getAttribute("currentUser"); // Sửa key từ "user" thành "currentUser"
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -315,6 +317,68 @@ public class CustomerServiceController {
     public ResponseEntity<List<com.LongChau.HealthMateLC.model.Customer>> getAllCustomers() {
         List<Customer> customers = customerService.getAll();
         return ResponseEntity.ok(customers);
+    }
+    // #endregion
+
+    // #region Revenue Report
+    /**
+     * Báo cáo doanh thu: tổng doanh thu, doanh thu theo từng nhà thuốc, số đơn hàng
+     */
+    @GetMapping("/stats/revenue-report")
+    public ResponseEntity<Map<String, Object>> getRevenueReport(
+            @RequestParam(value = "pharmacyId", required = false) Integer pharmacyId,
+            @RequestParam(value = "startDate", required = false) String startDate,
+            @RequestParam(value = "endDate", required = false) String endDate) {
+        List<Invoice> invoices;
+        // Parse time range if provided
+        java.time.LocalDateTime start = null, end = null;
+        try {
+            if (startDate != null && !startDate.isEmpty()) {
+                start = java.time.LocalDate.parse(startDate).atStartOfDay();
+            }
+            if (endDate != null && !endDate.isEmpty()) {
+                end = java.time.LocalDate.parse(endDate).atTime(23, 59, 59);
+            }
+        } catch (Exception e) {
+            // ignore parse error, fallback to all
+        }
+        if (pharmacyId != null && pharmacyId > 0) {
+            if (start != null && end != null) {
+                invoices = invoiceRepository.findByPharmacyPharmacyIdAndStatusAndInvoiceDateBetween(pharmacyId, "paid",
+                        start, end);
+            } else {
+                invoices = invoiceRepository.findByPharmacyPharmacyIdAndStatus(pharmacyId, "paid");
+            }
+        } else {
+            if (start != null && end != null) {
+                invoices = invoiceRepository.findByStatusAndInvoiceDateBetween("paid", start, end);
+            } else {
+                invoices = invoiceRepository.findByStatus("paid");
+            }
+        }
+        double totalRevenue = invoices.stream().mapToDouble(inv -> inv.getTotalAmount().doubleValue()).sum();
+        Map<Integer, Double> revenueByPharmacy = new HashMap<>();
+        Map<Integer, Integer> orderCountByPharmacy = new HashMap<>();
+        for (Invoice inv : invoices) {
+            int pid = inv.getPharmacy().getPharmacyId();
+            revenueByPharmacy.put(pid, revenueByPharmacy.getOrDefault(pid, 0.0) + inv.getTotalAmount().doubleValue());
+            orderCountByPharmacy.put(pid, orderCountByPharmacy.getOrDefault(pid, 0) + 1);
+        }
+        // Lấy tên nhà thuốc
+        List<PharmacyDTO> pharmacies = pharmacyService.getAllPharmaciesCS();
+        List<Map<String, Object>> pharmacyReports = pharmacies.stream().map(ph -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("pharmacyId", ph.getId());
+            map.put("pharmacyName", ph.getName());
+            map.put("revenue", revenueByPharmacy.getOrDefault(ph.getId(), 0.0));
+            map.put("orderCount", orderCountByPharmacy.getOrDefault(ph.getId(), 0));
+            return map;
+        }).collect(Collectors.toList());
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalRevenue", totalRevenue);
+        result.put("pharmacyReports", pharmacyReports);
+        result.put("orderCount", invoices.size());
+        return ResponseEntity.ok(result);
     }
     // #endregion
 }

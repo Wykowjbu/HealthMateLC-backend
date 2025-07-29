@@ -30,4 +30,10 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Integer> {
 
     @Query("SELECT DISTINCT i FROM Invoice i LEFT JOIN FETCH i.invoiceDetails id LEFT JOIN FETCH id.product WHERE i.customer.customerId = :customerId ORDER BY i.invoiceDate DESC")
     List<Invoice> findByCustomerId(@Param("customerId") Integer customerId);
+
+    //Find pharmacy invoices by id and status
+    List<Invoice> findByPharmacyPharmacyIdAndStatus(Integer pharmacyId, String status);
+    List<Invoice> findByStatus(String string);
+    List<Invoice> findByPharmacyPharmacyIdAndStatusAndInvoiceDateBetween(Integer pharmacyId, String string,
+            LocalDateTime start, LocalDateTime end); 
 }

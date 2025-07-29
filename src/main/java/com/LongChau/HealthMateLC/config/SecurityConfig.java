@@ -12,16 +12,19 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
+        http // enable CORS support
+                .cors() // <--- Bổ sung dòng này
+                .and()
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/", "/survey.html").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/employee/**").permitAll()
                         .requestMatchers("/admin/**").permitAll()
                         .requestMatchers("/customer-service/**").permitAll()
                         .requestMatchers("/manager/**").permitAll()
-                        .anyRequest().authenticated()
-                );
+
+                        .anyRequest().authenticated());
 
         return http.build();
     }

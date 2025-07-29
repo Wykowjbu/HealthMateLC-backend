@@ -13,7 +13,7 @@ import com.LongChau.HealthMateLC.model.Feedback;
 import com.LongChau.HealthMateLC.service.FeedbackService;
 
 @RestController
-@RequestMapping("/api/survey-feedback")
+@RequestMapping("/survey")
 public class FeedbackController {
     @Autowired
     private FeedbackService feedbackService;
