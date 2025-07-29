@@ -31,4 +31,7 @@ public class Product {
 
     @Column(name = "Price", nullable = false, precision = 19, scale = 4)
     private BigDecimal price;
+
+    @Column(name = "ImageBase64", columnDefinition = "nvarchar(max)")
+    private String imageBase64;
 }

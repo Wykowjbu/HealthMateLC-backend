@@ -31,6 +31,9 @@ public class ProductDTO {
     // Thêm trường số lượng tồn kho
     private Integer quantity;
 
+    // Thêm trường ảnh base64
+    private String imageBase64;
+
     public ProductDTO() {}
     public ProductDTO(String productName, String productType, String unit, String description, BigDecimal price) {
         this.productName = productName;

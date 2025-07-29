@@ -72,6 +72,7 @@ public class ProductService {
         product.setUnit(productDTO.getUnit());
         product.setPrice(productDTO.getPrice());
         product.setDescription(productDTO.getDescription());
+        product.setImageBase64(productDTO.getImageBase64());
         
         Product savedProduct = productRepository.save(product);
 
@@ -104,15 +105,9 @@ public class ProductService {
         product.setUnit(productDTO.getUnit());
         product.setPrice(productDTO.getPrice());
         product.setDescription(productDTO.getDescription());
+        product.setImageBase64(productDTO.getImageBase64());
         
         return productRepository.save(product);
-    }
-
-    public void deleteProduct(Integer productId) {
-        if (!productRepository.existsById(productId)) {
-            throw new RuntimeException("Sản phẩm không tồn tại");
-        }
-        productRepository.deleteById(productId);
     }
 
     public List<Product> searchProductsByName(String productName) {

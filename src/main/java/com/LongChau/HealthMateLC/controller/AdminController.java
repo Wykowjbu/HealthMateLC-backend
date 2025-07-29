@@ -238,6 +238,7 @@ public class AdminController {
             dto.setUnit(p.getUnit());
             dto.setPrice(p.getPrice());
             dto.setDescription(p.getDescription());
+            dto.setImageBase64(p.getImageBase64());
             // Thêm số lượng tồn kho
             dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
             dtos.add(dto);
@@ -259,6 +260,7 @@ public class AdminController {
             dto.setUnit(p.getUnit());
             dto.setPrice(p.getPrice());
             dto.setDescription(p.getDescription());
+            dto.setImageBase64(p.getImageBase64());
             // Thêm số lượng tồn kho
             dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
             return ResponseEntity.ok(dto);
@@ -313,6 +315,7 @@ public class AdminController {
             dto.setUnit(p.getUnit());
             dto.setPrice(p.getPrice());
             dto.setDescription(p.getDescription());
+            dto.setImageBase64(p.getImageBase64());
             // Thêm số lượng tồn kho
             dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
             dtos.add(dto);
@@ -498,8 +501,8 @@ public class AdminController {
     // Thêm các endpoint mới cho phân trang
     @GetMapping("/list-products-paginated")
     public ResponseEntity<Map<String, Object>> listProductsPaginated(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam int page,
+            @RequestParam int size) {
 
         Map<String, Object> response = new HashMap<>();
 
@@ -522,6 +525,7 @@ public class AdminController {
             dto.setUnit(p.getUnit());
             dto.setPrice(p.getPrice());
             dto.setDescription(p.getDescription());
+            dto.setImageBase64(p.getImageBase64());
             // Thêm số lượng tồn kho
             dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
             dtos.add(dto);
@@ -538,8 +542,8 @@ public class AdminController {
 
     @GetMapping("/list-pharmacies-paginated")
     public ResponseEntity<Map<String, Object>> listPharmaciesPaginated(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam int page,
+            @RequestParam int size) {
 
         Map<String, Object> response = new HashMap<>();
 
@@ -592,8 +596,8 @@ public class AdminController {
     public ResponseEntity<Map<String, Object>> searchProductsPaginated(
             @RequestParam String keyword,
             @RequestParam(defaultValue = "all") String type,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam int page,
+            @RequestParam int size) {
 
         Map<String, Object> response = new HashMap<>();
         int offset = page * size;
@@ -612,6 +616,7 @@ public class AdminController {
             dto.setUnit(p.getUnit());
             dto.setPrice(p.getPrice());
             dto.setDescription(p.getDescription());
+            dto.setImageBase64(p.getImageBase64());
             // Thêm số lượng tồn kho
             dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
             dtos.add(dto);
@@ -630,8 +635,8 @@ public class AdminController {
     public ResponseEntity<Map<String, Object>> searchPharmaciesPaginated(
             @RequestParam String keyword,
             @RequestParam(defaultValue = "all") String type,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam int page,
+            @RequestParam int size) {
 
         Map<String, Object> response = new HashMap<>();
         int offset = page * size;
