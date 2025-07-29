@@ -198,7 +198,7 @@ public class WorkScheduleService {
         }
     }
 
-    //#region History work employee
+    // #region History work employee
     /**
      * 
      * Lấy lịch sử làm việc của nhiều nhân viên theo danh sách userId
@@ -206,5 +206,12 @@ public class WorkScheduleService {
     public List<UserHistory> getUserHistoriesByUserIds(List<Integer> userIds) {
         return userHistoryRepository.findByUser_UserIdIn(userIds);
     }
-    //#endregion
+
+    /**
+     * Lấy lịch sử làm việc của một nhân viên theo userId
+     */
+    public List<UserHistory> getWorkHistoryForEmployee(Integer userId) {
+        return userHistoryRepository.findByUser_UserIdIn(java.util.Collections.singletonList(userId));
+    }
+    // #endregion
 }

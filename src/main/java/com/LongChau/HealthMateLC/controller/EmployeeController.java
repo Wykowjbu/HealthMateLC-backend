@@ -153,7 +153,7 @@ public class EmployeeController {
         return ResponseEntity.ok(schedules);
     }
 
-    //Đây là phương thức để check in và check out cho nhân viên
+    // Đây là phương thức để check in và check out cho nhân viên
     // ✅ FIXED: Get timesheet status by shift
     @GetMapping("/timesheet/status-by-shift")
     public ResponseEntity<?> getTimesheetStatusByShift(HttpSession session) {
@@ -232,18 +232,21 @@ public class EmployeeController {
                     // ✅ FIXED: Find matching timesheet for this specific shift
                     Timesheet matchingTimesheet = todayTimesheets.stream()
                             .filter(ts -> {
-                                if (ts.getCheckin() == null) return false;
+                                if (ts.getCheckin() == null)
+                                    return false;
                                 LocalTime checkinTime = ts.getCheckin();
                                 // Check if checkin is within this shift's window
-                                return !checkinTime.isBefore(allowedCheckInStart) && !checkinTime.isAfter(allowedCheckInEnd);
+                                return !checkinTime.isBefore(allowedCheckInStart)
+                                        && !checkinTime.isAfter(allowedCheckInEnd);
                             })
                             .findFirst()
                             .orElse(null);
 
                     if (matchingTimesheet != null) {
                         shiftStatus.put("checkInTime", matchingTimesheet.getCheckin().toString());
-                        shiftStatus.put("checkOutTime", matchingTimesheet.getCheckout() != null ?
-                                matchingTimesheet.getCheckout().toString() : null);
+                        shiftStatus.put("checkOutTime",
+                                matchingTimesheet.getCheckout() != null ? matchingTimesheet.getCheckout().toString()
+                                        : null);
 
                         if (matchingTimesheet.getCheckout() != null) {
                             shiftStatus.put("status", "completed");
@@ -259,7 +262,8 @@ public class EmployeeController {
                     shiftStatuses.add(shiftStatus);
 
                 } catch (Exception e) {
-                    System.out.println("DEBUG: Error processing schedule " + schedule.getScheduleId() + ": " + e.getMessage());
+                    System.out.println(
+                            "DEBUG: Error processing schedule " + schedule.getScheduleId() + ": " + e.getMessage());
                     e.printStackTrace();
                 }
             }
@@ -412,7 +416,8 @@ public class EmployeeController {
 
             // Set pharmacy safely
             try {
-                if (currentUser.getUserInformation() != null && currentUser.getUserInformation().getPharmacy() != null) {
+                if (currentUser.getUserInformation() != null
+                        && currentUser.getUserInformation().getPharmacy() != null) {
                     timesheet.setPharmacy(currentUser.getUserInformation().getPharmacy());
                 } else {
                     System.out.println("DEBUG: No pharmacy found for user, setting null");
@@ -431,7 +436,8 @@ public class EmployeeController {
             System.out.println("DEBUG: Check-in saved successfully for user: " + userId + ", shift: " + scheduleId);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("message", "Check-in thành công cho ca " + schedule.getStartTime() + " - " + schedule.getEndTime());
+            response.put("message",
+                    "Check-in thành công cho ca " + schedule.getStartTime() + " - " + schedule.getEndTime());
             response.put("checkInTime", now.toString());
             response.put("scheduleId", scheduleId);
             return ResponseEntity.ok(response);
@@ -561,7 +567,8 @@ public class EmployeeController {
             System.out.println("DEBUG: Check-out saved for user: " + userId + ", shift: " + scheduleId);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("message", "Check-out thành công cho ca " + schedule.getStartTime() + " - " + schedule.getEndTime());
+            response.put("message",
+                    "Check-out thành công cho ca " + schedule.getStartTime() + " - " + schedule.getEndTime());
             response.put("checkOutTime", now.toString());
             response.put("scheduleId", scheduleId);
             return ResponseEntity.ok(response);
@@ -577,14 +584,43 @@ public class EmployeeController {
     }
 
     @GetMapping("/danh-sach-khach-hang")
-    public ResponseEntity<List<Customer>> getAllCustomers(){
+    public ResponseEntity<List<Customer>> getAllCustomers() {
         List<Customer> customers = customerRepository.findAll();
         return ResponseEntity.ok(customers);
     }
 
     @PostMapping("/tao-moi-khach-hang")
-    public ResponseEntity<Customer> createCustomer(@RequestBody Customer customer){
+    public ResponseEntity<Customer> createCustomer(@RequestBody Customer customer) {
         Customer addNewCustomer = customerRepository.save(customer);
         return ResponseEntity.ok(addNewCustomer);
     }
+
+    // #region Get employee work history
+    @GetMapping("/history")
+    public ResponseEntity<?> getEmployeeWorkHistory(HttpSession session) {
+        User currentUser = (User) session.getAttribute("currentUser");
+        Integer userId = currentUser.getUserId();
+        try {
+            List<UserHistory> workHistory = workScheduleService.getWorkHistoryForEmployee(userId);
+            // Map to DTO for frontend
+            List<Map<String, Object>> result = workHistory.stream().map(h -> {
+                Map<String, Object> dto = new HashMap<>();
+                dto.put("historyId", h.getHistoryId());
+                dto.put("pharmacyName", h.getPharmacy().getPharmacyName());
+                // Format date only (yyyy-MM-dd)
+                String startDate = h.getStartTime() != null ? h.getStartTime().toLocalDate().toString() : "";
+                String endDate = h.getEndTime() != null ? h.getEndTime().toLocalDate().toString() : "";
+                dto.put("startDate", startDate);
+                dto.put("endDate", endDate);
+                return dto;
+            }).collect(java.util.stream.Collectors.toList());
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Internal server error");
+            errorResponse.put("message", "Lỗi máy chủ: " + e.getMessage());
+            return ResponseEntity.status(500).body(errorResponse);
+        }
+    }
+    // #endregion
 }
