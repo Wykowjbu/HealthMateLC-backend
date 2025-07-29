@@ -5,6 +5,7 @@ import com.LongChau.HealthMateLC.dto.ScheduleDTO;
 import com.LongChau.HealthMateLC.model.Pharmacy;
 import com.LongChau.HealthMateLC.model.Schedule;
 import com.LongChau.HealthMateLC.model.User;
+import com.LongChau.HealthMateLC.model.UserHistory;
 import com.LongChau.HealthMateLC.model.UserInformation;
 import com.LongChau.HealthMateLC.service.ScheduleEmailService;
 import com.LongChau.HealthMateLC.repository.UserRepository;
@@ -63,7 +64,8 @@ public class ManagerController {
             return ResponseEntity.status(401).body(errorResponse);
         }
 
-        System.out.println("DEBUG: currentUser found: " + currentUser.getUsername() + ", Role: " + currentUser.getRole());
+        System.out
+                .println("DEBUG: currentUser found: " + currentUser.getUsername() + ", Role: " + currentUser.getRole());
 
         if (!"MANAGER".equals(currentUser.getRole().toUpperCase())) {
             System.out.println("DEBUG: Invalid role: " + currentUser.getRole());
@@ -122,7 +124,8 @@ public class ManagerController {
             return ResponseEntity.status(401).body(errorResponse);
         }
 
-        System.out.println("DEBUG: currentUser found: " + currentUser.getUsername() + ", Role: " + currentUser.getRole());
+        System.out
+                .println("DEBUG: currentUser found: " + currentUser.getUsername() + ", Role: " + currentUser.getRole());
 
         if (!"MANAGER".equals(currentUser.getRole().toUpperCase())) {
             System.out.println("DEBUG: Invalid role: " + currentUser.getRole());
@@ -193,7 +196,8 @@ public class ManagerController {
             // Kiểm tra xem nhân viên có thuộc nhà thuốc của manager không
             User employee = userRepository.findById(userId).orElse(null);
             if (employee == null || employee.getUserInformation() == null ||
-                    !userInfo.getPharmacy().getPharmacyId().equals(employee.getUserInformation().getPharmacy().getPharmacyId())) {
+                    !userInfo.getPharmacy().getPharmacyId()
+                            .equals(employee.getUserInformation().getPharmacy().getPharmacyId())) {
                 Map<String, String> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Invalid user");
                 errorResponse.put("message", "Nhân viên không thuộc nhà thuốc của bạn");
@@ -225,8 +229,8 @@ public class ManagerController {
         try {
             // Lấy tên manager để gửi email
             UserInformation managerInfo = userInformationService.findUserInformationByUserId(currentUser.getUserId());
-            String managerName = managerInfo != null && managerInfo.getFullName() != null ?
-                    managerInfo.getFullName() : currentUser.getUsername();
+            String managerName = managerInfo != null && managerInfo.getFullName() != null ? managerInfo.getFullName()
+                    : currentUser.getUsername();
 
             // Sử dụng method mới có gửi email
             Schedule schedule = workScheduleService.updateScheduleWithNotification(
@@ -347,7 +351,8 @@ public class ManagerController {
                     endDateLocal.format(fileFormatter));
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.setContentType(
+                    MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
             headers.setContentDispositionFormData("attachment", fileName);
             headers.setContentLength(excelData.length);
 
@@ -364,4 +369,39 @@ public class ManagerController {
             return ResponseEntity.status(500).body(errorResponse);
         }
     }
+
+//#region History work employee
+    // Lịch sử làm việc tất cả nhân viên thuộc nhà thuốc của manager
+    @GetMapping("/history/all")
+    public ResponseEntity<?> getAllEmployeeHistory(HttpSession session) {
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser == null || !"manager".equalsIgnoreCase(currentUser.getRole())) {
+            return ResponseEntity.status(403).body(null);
+        }
+        UserInformation userInfo = userInformationService.findUserInformationByUserId(currentUser.getUserId());
+        if (userInfo == null || userInfo.getPharmacy() == null) {
+            return ResponseEntity.status(404).body(null);
+        }
+        Integer pharmacyId = userInfo.getPharmacy().getPharmacyId();
+        // Lấy tất cả nhân viên thuộc nhà thuốc
+        List<User> employees = userRepository.findEmployeesByPharmacyId(pharmacyId);
+        List<Integer> employeeIds = employees.stream().map(User::getUserId).collect(Collectors.toList());
+        // Lấy lịch sử làm việc của các nhân viên này
+        List<UserHistory> histories = workScheduleService.getUserHistoriesByUserIds(employeeIds);
+        // Map sang DTO cho frontend
+        List<Map<String, Object>> result = histories.stream().map(h -> {
+            Map<String, Object> dto = new HashMap<>();
+            dto.put("historyId", h.getHistoryId());
+            dto.put("userId", h.getUser().getUserId());
+            dto.put("fullName", h.getUser().getUserInformation() != null ? h.getUser().getUserInformation().getFullName() : h.getUser().getUsername());
+            dto.put("pharmacyId", h.getPharmacy().getPharmacyId());
+            dto.put("pharmacyName", h.getPharmacy().getPharmacyName());
+            dto.put("startTime", h.getStartTime());
+            dto.put("endTime", h.getEndTime());
+            return dto;
+        })
+        .collect(Collectors.toList()); // Sửa lỗi toList() thành collect(Collectors.toList())
+        return ResponseEntity.ok(result);
+    }
+    //#endregion
 }

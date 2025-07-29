@@ -3,7 +3,9 @@ package com.LongChau.HealthMateLC.service;
 import com.LongChau.HealthMateLC.dto.ScheduleDTO;
 import com.LongChau.HealthMateLC.model.Schedule;
 import com.LongChau.HealthMateLC.model.User;
+import com.LongChau.HealthMateLC.model.UserHistory;
 import com.LongChau.HealthMateLC.repository.ScheduleRepository;
+import com.LongChau.HealthMateLC.repository.UserHistoryRepository;
 import com.LongChau.HealthMateLC.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,10 +28,14 @@ public class WorkScheduleService {
     private UserRepository userRepository;
 
     @Autowired
+    private UserHistoryRepository userHistoryRepository;
+
+    @Autowired
     private ScheduleEmailService scheduleEmailService;
 
     /**
      * Converts a Schedule entity to a ScheduleDTO.
+     * 
      * @param schedule the schedule entity
      * @return the corresponding DTO
      */
@@ -53,6 +59,7 @@ public class WorkScheduleService {
 
     /**
      * Retrieves schedules for a single user ID (aliased for EmployeeController).
+     * 
      * @param userId the ID of the user
      * @return list of schedule DTOs
      */
@@ -62,6 +69,7 @@ public class WorkScheduleService {
 
     /**
      * Retrieves schedules for a list of user IDs.
+     * 
      * @param userIds list of user IDs
      * @return list of schedule DTOs
      */
@@ -72,6 +80,7 @@ public class WorkScheduleService {
 
     /**
      * Retrieves schedules for a single user ID.
+     * 
      * @param userId the ID of the user
      * @return list of schedule DTOs
      */
@@ -82,10 +91,11 @@ public class WorkScheduleService {
 
     /**
      * Creates a new schedule for a user.
-     * @param userId the ID of the user
-     * @param date the schedule date
+     * 
+     * @param userId    the ID of the user
+     * @param date      the schedule date
      * @param startTime the start time
-     * @param endTime the end time
+     * @param endTime   the end time
      * @return the saved schedule
      * @throws IllegalArgumentException if user is not found
      */
@@ -102,6 +112,7 @@ public class WorkScheduleService {
 
     /**
      * Deletes a schedule by ID.
+     * 
      * @param scheduleId the schedule ID to delete
      * @throws IllegalArgumentException if schedule is not found
      */
@@ -113,10 +124,11 @@ public class WorkScheduleService {
 
     /**
      * Updates a schedule (original method - no email notification).
+     * 
      * @param scheduleId the schedule ID
-     * @param date the new date
-     * @param startTime the new start time
-     * @param endTime the new end time
+     * @param date       the new date
+     * @param startTime  the new start time
+     * @param endTime    the new end time
      * @return the updated schedule
      * @throws IllegalArgumentException if schedule is not found
      */
@@ -131,15 +143,17 @@ public class WorkScheduleService {
 
     /**
      * Updates a schedule with email notification to employee.
-     * @param scheduleId the schedule ID
-     * @param date the new date
-     * @param startTime the new start time
-     * @param endTime the new end time
+     * 
+     * @param scheduleId  the schedule ID
+     * @param date        the new date
+     * @param startTime   the new start time
+     * @param endTime     the new end time
      * @param managerName the name of the manager making the change
      * @return the updated schedule
      * @throws RuntimeException if schedule is not found or update fails
      */
-    public Schedule updateScheduleWithNotification(Integer scheduleId, Date date, Time startTime, Time endTime, String managerName) {
+    public Schedule updateScheduleWithNotification(Integer scheduleId, Date date, Time startTime, Time endTime,
+            String managerName) {
         try {
             // Lấy thông tin lịch cũ trước khi cập nhật
             Schedule oldSchedule = scheduleRepository.findById(scheduleId)
@@ -169,8 +183,7 @@ public class WorkScheduleService {
                         employee,
                         oldScheduleCopy,
                         updatedSchedule,
-                        managerName
-                );
+                        managerName);
                 System.out.println("📧 Đã gửi email thông báo cập nhật lịch cho nhân viên ID: " + employee.getUserId());
             } catch (Exception emailError) {
                 System.err.println("⚠️ Lịch đã được cập nhật nhưng có lỗi khi gửi email: " + emailError.getMessage());
@@ -184,4 +197,14 @@ public class WorkScheduleService {
             throw new RuntimeException("Lỗi khi cập nhật lịch làm việc: " + e.getMessage());
         }
     }
+
+    //#region History work employee
+    /**
+     * 
+     * Lấy lịch sử làm việc của nhiều nhân viên theo danh sách userId
+     */
+    public List<UserHistory> getUserHistoriesByUserIds(List<Integer> userIds) {
+        return userHistoryRepository.findByUser_UserIdIn(userIds);
+    }
+    //#endregion
 }
