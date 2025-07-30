@@ -20,19 +20,17 @@ public interface PharmacyRepository extends JpaRepository<Pharmacy, Integer> {
     Page<Pharmacy> findByPharmacyNameContainingIgnoreCase(String pharmacyName, Pageable pageable);
     Page<Pharmacy> findByPhoneContaining(String phone, Pageable pageable);
     Page<Pharmacy> findByAddressContainingIgnoreCase(String address, Pageable pageable);
-    Page<Pharmacy> findByEmailContainingIgnoreCase(String email, Pageable pageable);
 
-    // Search across all fields with pagination
-    Page<Pharmacy> findByPharmacyNameContainingIgnoreCaseOrPhoneContainingOrAddressContainingIgnoreCaseOrEmailContainingIgnoreCase(
-            String pharmacyName, String phone, String address, String email, Pageable pageable);
+    // Search across 3 main fields with pagination
+    Page<Pharmacy> findByPharmacyNameContainingIgnoreCaseOrPhoneContainingOrAddressContainingIgnoreCase(
+            String pharmacyName, String phone, String address, Pageable pageable);
 
     // Search without pagination (for backward compatibility)
     List<Pharmacy> findByPharmacyNameContainingIgnoreCase(String pharmacyName);
     List<Pharmacy> findByPhoneContaining(String phone);
     List<Pharmacy> findByAddressContainingIgnoreCase(String address);
-    List<Pharmacy> findByEmailContainingIgnoreCase(String email);
-    List<Pharmacy> findByPharmacyNameContainingIgnoreCaseOrPhoneContainingOrAddressContainingIgnoreCaseOrEmailContainingIgnoreCase(
-            String pharmacyName, String phone, String address, String email);
+    List<Pharmacy> findByPharmacyNameContainingIgnoreCaseOrPhoneContainingOrAddressContainingIgnoreCase(
+            String pharmacyName, String phone, String address);
 
     // Get all active pharmacies
     Page<Pharmacy> findByIsActiveTrue(Pageable pageable);

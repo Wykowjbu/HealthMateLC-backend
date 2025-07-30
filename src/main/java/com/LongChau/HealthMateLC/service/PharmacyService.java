@@ -45,12 +45,10 @@ public class PharmacyService {
                 return pharmacyRepository.findByPhoneContaining(keyword, pageable);
             case "address":
                 return pharmacyRepository.findByAddressContainingIgnoreCase(keyword, pageable);
-            case "email":
-                return pharmacyRepository.findByEmailContainingIgnoreCase(keyword, pageable);
             case "all":
             default:
-                return pharmacyRepository.findByPharmacyNameContainingIgnoreCaseOrPhoneContainingOrAddressContainingIgnoreCaseOrEmailContainingIgnoreCase(
-                        keyword, keyword, keyword, keyword, pageable);
+                return pharmacyRepository.findByPharmacyNameContainingIgnoreCaseOrPhoneContainingOrAddressContainingIgnoreCase(
+                        keyword, keyword, keyword, pageable);
         }
     }
 
@@ -97,12 +95,10 @@ public class PharmacyService {
                 return pharmacyRepository.findByPhoneContaining(keyword);
             case "address":
                 return pharmacyRepository.findByAddressContainingIgnoreCase(keyword);
-            case "email":
-                return pharmacyRepository.findByEmailContainingIgnoreCase(keyword);
             case "all":
             default:
-                return pharmacyRepository.findByPharmacyNameContainingIgnoreCaseOrPhoneContainingOrAddressContainingIgnoreCaseOrEmailContainingIgnoreCase(
-                        keyword, keyword, keyword, keyword);
+                return pharmacyRepository.findByPharmacyNameContainingIgnoreCaseOrPhoneContainingOrAddressContainingIgnoreCase(
+                        keyword, keyword, keyword);
         }
     }
 

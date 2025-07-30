@@ -438,10 +438,10 @@ public class AdminController {
     }
 
     @PutMapping("/update-product-quantity")
-    public ResponseEntity<Map<String, String>> updateProductQuantity(
+    public ResponseEntity<Map<String, Object>> updateProductQuantity(
             @Valid @RequestBody InventoryDTO inventoryDTO,
             BindingResult bindingResult) {
-        Map<String, String> response = new HashMap<>();
+        Map<String, Object> response = new HashMap<>();
 
         // Check validation errors from Bean Validation
         if (bindingResult.hasErrors()) {
@@ -460,13 +460,28 @@ public class AdminController {
             // Cập nhật số lượng
             inventoryService.updateProductQuantity(inventoryDTO);
 
+            // Lấy thông tin sản phẩm đã cập nhật
+            Optional<Product> productOpt = productService.findById(inventoryDTO.getProductId());
+            if (productOpt.isPresent()) {
+                Product product = productOpt.get();
+                Map<String, Object> productInfo = new HashMap<>();
+                productInfo.put("productId", product.getProductId());
+                productInfo.put("productName", product.getProductName());
+                productInfo.put("quantity", inventoryService.getProductQuantity(product.getProductId()));
+                
+                response.put("product", productInfo);
+            }
+
             response.put("message", "Cập nhật số lượng thành công");
+            response.put("success", true);
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (RuntimeException e) {
             response.put("message", e.getMessage());
+            response.put("success", false);
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             response.put("message", "Lỗi khi cập nhật số lượng: " + e.getMessage());
+            response.put("success", false);
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -507,14 +522,22 @@ public class AdminController {
     // Thêm các endpoint mới cho phân trang
     @GetMapping("/list-products-paginated")
     public ResponseEntity<Map<String, Object>> getProductsPaginated(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "6") int size) {
+            @RequestParam int page,
+            @RequestParam int size) {
         try {
-            List<Product> products = productService.getProductsPaginated(page, size);
-            long totalProducts = productService.getTotalProductCount();
-            long totalPages = (long) Math.ceil((double) totalProducts / size);
+            // Debug logging
+            System.out.println("DEBUG: Requested page=" + page + ", size=" + size);
+            
+            Page<Product> productPage = productService.getProductsPaginated(page, size);
+            
+            // Debug logging
+            System.out.println("DEBUG: Total elements=" + productPage.getTotalElements());
+            System.out.println("DEBUG: Total pages=" + productPage.getTotalPages());
+            System.out.println("DEBUG: Current page=" + productPage.getNumber());
+            System.out.println("DEBUG: Page size=" + productPage.getSize());
+            System.out.println("DEBUG: Content size=" + productPage.getContent().size());
 
-            List<ProductDTO> productDTOs = products.stream()
+            List<ProductDTO> productDTOs = productPage.getContent().stream()
                 .map(p -> {
                     ProductDTO dto = new ProductDTO();
                     dto.setProductId(p.getProductId());
@@ -531,12 +554,15 @@ public class AdminController {
 
             Map<String, Object> response = new HashMap<>();
             response.put("products", productDTOs);
-            response.put("currentPage", page);
-            response.put("totalPages", totalPages);
-            response.put("totalProducts", totalProducts);
+            response.put("currentPage", productPage.getNumber());
+            response.put("totalPages", productPage.getTotalPages());
+            response.put("totalProducts", productPage.getTotalElements());
+            response.put("pageSize", productPage.getSize());
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            System.err.println("ERROR in getProductsPaginated: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -591,14 +617,12 @@ public class AdminController {
     public ResponseEntity<Map<String, Object>> searchProductsPaginated(
             @RequestParam String keyword,
             @RequestParam(defaultValue = "all") String type,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "6") int size) {
+            @RequestParam int page,
+            @RequestParam int size) {
         try {
-            List<Product> products = productService.searchProductsPaginated(keyword, type, page, size);
-            long totalProducts = productService.getSearchProductCount(keyword, type);
-            long totalPages = (long) Math.ceil((double) totalProducts / size);
+            Page<Product> productPage = productService.searchProductsPaginated(keyword, type, page, size);
 
-            List<ProductDTO> productDTOs = products.stream()
+            List<ProductDTO> productDTOs = productPage.getContent().stream()
                 .map(p -> {
                     ProductDTO dto = new ProductDTO();
                     dto.setProductId(p.getProductId());
@@ -615,9 +639,10 @@ public class AdminController {
 
             Map<String, Object> response = new HashMap<>();
             response.put("products", productDTOs);
-            response.put("currentPage", page);
-            response.put("totalPages", totalPages);
-            response.put("totalProducts", totalProducts);
+            response.put("currentPage", productPage.getNumber());
+            response.put("totalPages", productPage.getTotalPages());
+            response.put("totalProducts", productPage.getTotalElements());
+            response.put("pageSize", productPage.getSize());
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -741,5 +766,43 @@ public class AdminController {
             profile.put("email", "Chưa cập nhật");
         }
         return ResponseEntity.ok(profile);
+    }
+
+    @GetMapping("/reload-products-after-update")
+    public ResponseEntity<Map<String, Object>> reloadProductsAfterUpdate(
+            @RequestParam int page,
+            @RequestParam int size) {
+        try {
+            Page<Product> productPage = productService.getProductsPaginated(page, size);
+
+            List<ProductDTO> productDTOs = productPage.getContent().stream()
+                .map(p -> {
+                    ProductDTO dto = new ProductDTO();
+                    dto.setProductId(p.getProductId());
+                    dto.setProductName(p.getProductName());
+                    dto.setProductType(p.getProductType());
+                    dto.setUnit(p.getUnit());
+                    dto.setDescription(p.getDescription());
+                    dto.setPrice(p.getPrice());
+                    dto.setImageUrl(p.getImageUrl());
+                    dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("products", productDTOs);
+            response.put("currentPage", productPage.getNumber());
+            response.put("totalPages", productPage.getTotalPages());
+            response.put("totalProducts", productPage.getTotalElements());
+            response.put("pageSize", productPage.getSize());
+            response.put("message", "Data reloaded successfully");
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Error reloading data: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 }
