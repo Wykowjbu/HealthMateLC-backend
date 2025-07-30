@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
 
 @RestController
 @RequestMapping("/admin")
@@ -547,18 +548,12 @@ public class AdminController {
 
         Map<String, Object> response = new HashMap<>();
 
-        // Tính offset
-        int offset = page * size;
-
-        // Lấy tổng số nhà thuốc
-        long totalPharmacies = pharmacyService.getTotalPharmacyCount();
-
-        // Lấy nhà thuốc theo phân trang
-        List<Pharmacy> pharmacies = pharmacyService.getPharmaciesPaginated(offset, size);
+        // Lấy nhà thuốc theo phân trang sử dụng Pageable
+        Page<Pharmacy> pharmacyPage = pharmacyService.getPharmaciesPaginated(page, size);
 
         // Convert to Map để tránh Hibernate proxy
         List<Map<String, Object>> pharmacyMaps = new ArrayList<>();
-        for (Pharmacy p : pharmacies) {
+        for (Pharmacy p : pharmacyPage.getContent()) {
             Map<String, Object> map = new HashMap<>();
             map.put("pharmacyId", p.getPharmacyId());
             map.put("pharmacyName", p.getPharmacyName());
@@ -584,10 +579,10 @@ public class AdminController {
         }
 
         response.put("pharmacies", pharmacyMaps);
-        response.put("totalItems", totalPharmacies);
-        response.put("totalPages", (int) Math.ceil((double) totalPharmacies / size));
-        response.put("currentPage", page);
-        response.put("pageSize", size);
+        response.put("totalItems", pharmacyPage.getTotalElements());
+        response.put("totalPages", pharmacyPage.getTotalPages());
+        response.put("currentPage", pharmacyPage.getNumber());
+        response.put("pageSize", pharmacyPage.getSize());
 
         return ResponseEntity.ok(response);
     }
@@ -638,15 +633,13 @@ public class AdminController {
             @RequestParam int size) {
 
         Map<String, Object> response = new HashMap<>();
-        int offset = page * size;
 
-        // Lấy kết quả tìm kiếm với phân trang
-        long totalPharmacies = pharmacyService.getSearchPharmacyCount(keyword, type);
-        List<Pharmacy> pharmacies = pharmacyService.searchPharmaciesPaginated(keyword, type, offset, size);
+        // Lấy nhà thuốc theo tìm kiếm và phân trang sử dụng Pageable
+        Page<Pharmacy> pharmacyPage = pharmacyService.searchPharmaciesPaginated(keyword, type, page, size);
 
-        // Convert to Map
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (Pharmacy p : pharmacies) {
+        // Convert to Map để tránh Hibernate proxy
+        List<Map<String, Object>> pharmacyMaps = new ArrayList<>();
+        for (Pharmacy p : pharmacyPage.getContent()) {
             Map<String, Object> map = new HashMap<>();
             map.put("pharmacyId", p.getPharmacyId());
             map.put("pharmacyName", p.getPharmacyName());
@@ -668,14 +661,14 @@ public class AdminController {
                 managerNames = String.join(", ", names);
             }
             map.put("manager", managerNames.isEmpty() ? "Chưa gán" : managerNames);
-            result.add(map);
+            pharmacyMaps.add(map);
         }
 
-        response.put("pharmacies", result);
-        response.put("totalItems", totalPharmacies);
-        response.put("totalPages", (int) Math.ceil((double) totalPharmacies / size));
-        response.put("currentPage", page);
-        response.put("pageSize", size);
+        response.put("pharmacies", pharmacyMaps);
+        response.put("totalItems", pharmacyPage.getTotalElements());
+        response.put("totalPages", pharmacyPage.getTotalPages());
+        response.put("currentPage", pharmacyPage.getNumber());
+        response.put("pageSize", pharmacyPage.getSize());
 
         return ResponseEntity.ok(response);
     }
