@@ -241,6 +241,7 @@ public class AdminController {
                     dto.setDescription(p.getDescription());
                     dto.setPrice(p.getPrice());
                     dto.setImageUrl(p.getImageUrl());
+                    dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -522,6 +523,7 @@ public class AdminController {
                     dto.setDescription(p.getDescription());
                     dto.setPrice(p.getPrice());
                     dto.setImageUrl(p.getImageUrl());
+                    dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -611,6 +613,7 @@ public class AdminController {
                     dto.setDescription(p.getDescription());
                     dto.setPrice(p.getPrice());
                     dto.setImageUrl(p.getImageUrl());
+                    dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
                     return dto;
                 })
                 .collect(Collectors.toList());
