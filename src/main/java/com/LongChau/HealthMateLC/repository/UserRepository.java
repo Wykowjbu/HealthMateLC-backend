@@ -16,6 +16,9 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     User findUserByUsername(String username);
 
+    @Query("SELECT DISTINCT u.role FROM User u")
+    List<String> getDistinctRoles();
+
     Optional<User> findByUsername(String username); // Thay User bằng Optional<User>
 
     List<User> findByRole(String role);
@@ -27,11 +30,10 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     boolean existsByUsername(String username);
 
-    // Thêm phương thức mới
+    // Thêm phương thức mới từ nhánh managercontroller
     @Query("SELECT u FROM User u WHERE u.userId = :userId AND u.role = :role")
     User findByUserIdAndRole(@Param("userId") Integer userId, @Param("role") String role);
 
     @Query("SELECT u FROM User u JOIN u.userInformation ui WHERE ui.pharmacy.pharmacyId = :pharmacyId AND u.role = 'employee'")
     List<User> findEmployeesByPharmacyId(@Param("pharmacyId") Integer pharmacyId);
-
 }
