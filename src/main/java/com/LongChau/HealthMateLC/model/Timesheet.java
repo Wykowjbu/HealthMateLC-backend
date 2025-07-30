@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
@@ -30,4 +32,7 @@ public class Timesheet {
 
     @Column(name = "Checkout")
     private LocalTime checkout;
+
+    @Column(name = "date", nullable = false)
+    private LocalDate date;
 }
