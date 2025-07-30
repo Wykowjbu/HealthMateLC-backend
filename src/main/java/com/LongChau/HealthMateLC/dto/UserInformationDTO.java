@@ -23,6 +23,6 @@ public class UserInformationDTO {
         this.email = email;
         this.role = role;
         this.pharmacyId = pharmacyId;
-        username=username;
+        this.username=username;
     }
 }

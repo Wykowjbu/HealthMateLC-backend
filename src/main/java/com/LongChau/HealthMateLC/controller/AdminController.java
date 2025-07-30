@@ -137,6 +137,25 @@ public class AdminController {
         return new ResponseEntity<>(roles, HttpStatus.OK);
     }
 
+    @PutMapping("/update-account/{userId}")
+    public ResponseEntity<UserInformationDTO> updateAccount(@PathVariable("userId") Integer userId, @RequestBody UserInformationDTO userInformationDTO) {
+        UserInformationDTO userInformationDtoResult = userService.updateUserAndUserInformation(userInformationDTO, userId);
+        if (userInformationDtoResult != null) {
+            return new ResponseEntity<>(userInformationDtoResult, HttpStatus.OK);
+        }
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    @PutMapping("/reset-password/{userId}")
+    public ResponseEntity<?> resetPassword(@PathVariable Integer userId, @RequestBody ResetPasswordRequest resetPasswordRequest) {
+        try{
+            userService.resetPassword(userId, resetPasswordRequest.getNewPassword());
+            return ResponseEntity.ok().build();
+        }catch (Exception e) {
+            return ResponseEntity.badRequest().body(HttpStatus.NOT_FOUND);
+        }
+    }
+
     @PostMapping("/add-account")
     public ResponseEntity<Map<String, String>> addAccount(
             @Valid @RequestBody UserAccountFullDTO dto,
@@ -747,3 +766,4 @@ public class AdminController {
         return ResponseEntity.ok(profile);
     }
 }
+
