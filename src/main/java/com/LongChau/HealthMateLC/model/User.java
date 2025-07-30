@@ -8,9 +8,6 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "Users")
-
-
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
