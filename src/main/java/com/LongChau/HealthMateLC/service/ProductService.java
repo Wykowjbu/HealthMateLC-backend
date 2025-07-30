@@ -1,42 +1,48 @@
 package com.LongChau.HealthMateLC.service;
 
 import com.LongChau.HealthMateLC.dto.ProductDTO;
-import com.LongChau.HealthMateLC.model.Product;
 import com.LongChau.HealthMateLC.model.Inventory;
-import com.LongChau.HealthMateLC.repository.ProductRepository;
+import com.LongChau.HealthMateLC.model.Product;
 import com.LongChau.HealthMateLC.repository.InventoryRepository;
+import com.LongChau.HealthMateLC.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class ProductService {
-    
+
     @Autowired
     private ProductRepository productRepository;
+    
     @Autowired
     private InventoryRepository inventoryRepository;
     
-    // Phương thức cho phân trang
+    @Autowired
+    private FileUploadService fileUploadService;
+
     public List<Product> getProductsPaginated(int offset, int size) {
-        return productRepository.findProductsPaginated(offset, size);
+        Pageable pageable = PageRequest.of(offset, size);
+        return productRepository.findAll(pageable).getContent();
     }
-    
+
     public long getTotalProductCount() {
-        return productRepository.getTotalProductCount();
+        return productRepository.count();
     }
-    
+
     public List<Product> searchProductsPaginated(String keyword, String type, int offset, int size) {
         return productRepository.searchProductsPaginated(keyword, type, offset, size);
     }
-    
+
     public long getSearchProductCount(String keyword, String type) {
         return productRepository.getSearchProductCount(keyword, type);
     }
-    
 
     public List<Product> getAllProducts() {
         return productRepository.findAll();
@@ -72,10 +78,21 @@ public class ProductService {
         product.setUnit(productDTO.getUnit());
         product.setPrice(productDTO.getPrice());
         product.setDescription(productDTO.getDescription());
-        product.setImageBase64(productDTO.getImageBase64());
+        
+        // Xử lý ảnh
+        if (productDTO.getImageBase64() != null && !productDTO.getImageBase64().isEmpty()) {
+            try {
+                String imageUrl = fileUploadService.convertBase64ToFile(
+                    productDTO.getImageBase64(), 
+                    productDTO.getProductName() + ".jpg"
+                );
+                product.setImageUrl(imageUrl);
+            } catch (IOException e) {
+                throw new RuntimeException("Không thể lưu ảnh sản phẩm", e);
+            }
+        }
         
         Product savedProduct = productRepository.save(product);
-
 
         Inventory inventory = new Inventory();
         inventory.setProduct(savedProduct);
@@ -100,12 +117,30 @@ public class ProductService {
             throw new RuntimeException("Tên sản phẩm đã tồn tại");
         }
         
+        // Xóa ảnh cũ nếu có ảnh mới
+        if (productDTO.getImageBase64() != null && !productDTO.getImageBase64().isEmpty()) {
+            // Xóa ảnh cũ
+            if (product.getImageUrl() != null) {
+                fileUploadService.deleteImage(product.getImageUrl());
+            }
+            
+            // Lưu ảnh mới
+            try {
+                String imageUrl = fileUploadService.convertBase64ToFile(
+                    productDTO.getImageBase64(), 
+                    productDTO.getProductName() + ".jpg"
+                );
+                product.setImageUrl(imageUrl);
+            } catch (IOException e) {
+                throw new RuntimeException("Không thể lưu ảnh sản phẩm", e);
+            }
+        }
+        
         product.setProductName(productDTO.getProductName());
         product.setProductType(productDTO.getProductType());
         product.setUnit(productDTO.getUnit());
         product.setPrice(productDTO.getPrice());
         product.setDescription(productDTO.getDescription());
-        product.setImageBase64(productDTO.getImageBase64());
         
         return productRepository.save(product);
     }

@@ -20,6 +20,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin/**").permitAll()
                         .requestMatchers("/customer-service/**").permitAll()
                         .requestMatchers("/manager/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()  // Cho phép truy cập ảnh
                         .anyRequest().authenticated()
                 );
 
