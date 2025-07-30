@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -85,5 +86,12 @@ public class InventoryService {
             inventoryRepository.save(inventory);
         }
         return true;
+    }
+
+    /**
+     * Lấy danh sách tồn kho của tất cả sản phẩm
+     */
+    public List<Inventory> getAll() {
+        return inventoryRepository.findAll();
     }
 }

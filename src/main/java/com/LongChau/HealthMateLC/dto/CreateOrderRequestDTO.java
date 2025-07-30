@@ -11,6 +11,7 @@ public class CreateOrderRequestDTO {
     private String paymentMethod;
     private String status;
     private String invoiceDate;
+    private String notes;  // Thêm trường notes
 
     public CreateOrderRequestDTO() {
     }
@@ -72,6 +73,14 @@ public class CreateOrderRequestDTO {
         this.invoiceDate = invoiceDate;
     }
 
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
     @Override
     public String toString() {
         return "CreateOrderRequestDTO{" +
@@ -82,6 +91,7 @@ public class CreateOrderRequestDTO {
                 ", paymentMethod='" + paymentMethod + '\'' +
                 ", status='" + status + '\'' +
                 ", invoiceDate='" + invoiceDate + '\'' +
+                ", notes='" + notes + '\'' +
                 '}';
     }
 

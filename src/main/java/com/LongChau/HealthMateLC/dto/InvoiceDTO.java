@@ -14,6 +14,7 @@ public class InvoiceDTO {
     private String paymentMethod;
     private LocalDateTime invoiceDate;
     private String status;
+    private String notes;  // Thêm trường notes
 
     public InvoiceDTO() {
     }
@@ -116,6 +117,14 @@ public class InvoiceDTO {
         this.status = status;
     }
 
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
     @Override
     public String toString() {
         return "InvoiceDTO{" +
@@ -128,6 +137,7 @@ public class InvoiceDTO {
                 ", paymentMethod='" + paymentMethod + '\'' +
                 ", invoiceDate=" + invoiceDate +
                 ", status='" + status + '\'' +
+                ", notes='" + notes + '\'' +
                 '}';
     }
 }

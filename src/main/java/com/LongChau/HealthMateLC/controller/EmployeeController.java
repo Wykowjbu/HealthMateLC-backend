@@ -1,9 +1,7 @@
 package com.LongChau.HealthMateLC.controller;
 
-import com.LongChau.HealthMateLC.model.Customer;
-import com.LongChau.HealthMateLC.model.Product;
-import com.LongChau.HealthMateLC.model.Schedule;
-import com.LongChau.HealthMateLC.model.Invoice;
+import com.LongChau.HealthMateLC.model.*;
+import com.LongChau.HealthMateLC.model.Inventory;
 import com.LongChau.HealthMateLC.dto.EmployeeInfoDTO;
 import com.LongChau.HealthMateLC.dto.UserHistoryDTO;
 import com.LongChau.HealthMateLC.dto.CreateOrderRequestDTO;
@@ -14,10 +12,12 @@ import com.LongChau.HealthMateLC.service.ScheduleService;
 import com.LongChau.HealthMateLC.service.InvoiceService;
 import com.LongChau.HealthMateLC.service.UserInformationService;
 import com.LongChau.HealthMateLC.service.UserHistoryService;
+import com.LongChau.HealthMateLC.service.InventoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.Console;
 import java.util.List;
 
 @RestController
@@ -36,6 +36,8 @@ public class EmployeeController {
     private UserInformationService userInformationService;
     @Autowired
     private UserHistoryService userHistoryService;
+    @Autowired
+    private InventoryService inventoryService;
 
     @GetMapping("/danh-sach-khach-hang")
     public ResponseEntity<List<Customer>> getAllCustomers(){
@@ -45,6 +47,7 @@ public class EmployeeController {
 
     @PostMapping("/tao-moi-khach-hang")
     public ResponseEntity<Customer> createCustomer(@RequestBody Customer customer){
+        System.out.println("Creating new customer: " + customer);
         if (isPhoneOrEmailExists(customer)) {
             return ResponseEntity.badRequest().body(customer);
         }
@@ -57,7 +60,7 @@ public class EmployeeController {
     public ResponseEntity<Customer> updateCustomerById(@PathVariable Integer id, @RequestBody Customer customer) {
         // Set the customer ID from path variable
         customer.setCustomerId(id);
-        if (!isPhoneOrEmailExists(customer)) {
+        if (isPhoneOrEmailExists(customer)) {  // Sửa logic: nếu phone/email ĐÃ tồn tại thì báo lỗi
             return ResponseEntity.badRequest().body(customer);
         }
         Customer updatedCustomer = customerService.updateCustomer(customer);
@@ -86,6 +89,16 @@ public class EmployeeController {
         //phanhuy
     }
 
+    @GetMapping("/inventory")
+    public ResponseEntity<List<Inventory>> getAllInventory() {
+        List<Inventory> inventoryList = inventoryService.getAll();
+        System.out.println("---------------------------------------------------------");
+        for (Inventory i: inventoryList) {
+            System.out.println("Product ID: " + i.getProductId() + ", Quantity: " + i.getNumber());
+        }
+        return ResponseEntity.ok(inventoryList);
+    }
+
     @GetMapping ("/lich-lam-viec")
     public  ResponseEntity<List<Schedule>> getScheduleByUserId(@RequestParam Integer userId) {
         List<Schedule> schedules = scheduleService.getSchedulesByUserId(userId);
@@ -98,9 +111,9 @@ public class EmployeeController {
         return ResponseEntity.ok(orderHistory);
     }
 
-    @GetMapping("/dach-sach-don-hang-hom-nay")
-    public ResponseEntity<List<Invoice>> getTodayInvoices() {
-        List<Invoice> todayInvoices = invoiceService.getAll(); // Assuming you want all invoices for today
+    @GetMapping("/danh-sach-don-hang")
+    public ResponseEntity<List<InvoiceResponseDTO>> getTodayInvoices() {
+        List<InvoiceResponseDTO> todayInvoices = invoiceService.getAllInvoicesWithDetails();
         System.out.println(todayInvoices);
         return ResponseEntity.ok(todayInvoices);
     }
@@ -125,7 +138,7 @@ public class EmployeeController {
     @PostMapping("/tao-don-hang")
     public ResponseEntity<?> createOrder(@RequestBody CreateOrderRequestDTO orderRequest) {
         System.out.println(orderRequest.getStatus()+ " thong tin o day ---------------------------------------------");
-
+        System.out.println(" thong tin o day ---------------------------------------------"+ orderRequest);
         try {
             InvoiceResponseDTO createdInvoice = invoiceService.createOrder(orderRequest);
             return ResponseEntity.ok(createdInvoice);
@@ -135,4 +148,5 @@ public class EmployeeController {
             return ResponseEntity.internalServerError().body("Internal server error occurred");
         }
     }
+
 }
