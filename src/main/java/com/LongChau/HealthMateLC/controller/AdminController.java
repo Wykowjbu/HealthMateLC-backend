@@ -140,6 +140,7 @@ public class AdminController {
     @PutMapping("/update-account/{userId}")
     public ResponseEntity<UserInformationDTO> updateAccount(@PathVariable("userId") Integer userId, @RequestBody UserInformationDTO userInformationDTO) {
         UserInformationDTO userInformationDtoResult = userService.updateUserAndUserInformation(userInformationDTO, userId);
+        System.out.println("userInformationDtoResult: " + userInformationDtoResult.toString());
         if (userInformationDtoResult != null) {
             return new ResponseEntity<>(userInformationDtoResult, HttpStatus.OK);
         }
@@ -149,7 +150,7 @@ public class AdminController {
     @PutMapping("/reset-password/{userId}")
     public ResponseEntity<?> resetPassword(@PathVariable Integer userId, @RequestBody ResetPasswordRequest resetPasswordRequest) {
         try{
-            //userService.resetPassword(userId, resetPasswordRequest.getNewPassword());
+            userService.resetPassword(userId, resetPasswordRequest.getNewPassword());
             return ResponseEntity.ok().build();
         }catch (Exception e) {
             return ResponseEntity.badRequest().body(HttpStatus.NOT_FOUND);
