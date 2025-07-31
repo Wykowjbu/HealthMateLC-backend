@@ -759,5 +759,12 @@ public class EmployeeController {
         return ResponseEntity.ok(inventoryList);
     }
 
+    @GetMapping("/demo")
+    public ResponseEntity<String> getstringDemo() {
+
+
+        return ResponseEntity.ok("Hello from EmployeeController!");
+    }
+
     // #endregion
 }
