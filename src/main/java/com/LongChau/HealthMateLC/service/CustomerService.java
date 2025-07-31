@@ -13,22 +13,29 @@ public class CustomerService {
 
     private final CustomerRepository customerRepository;
 
-
     @Autowired
     public CustomerService(CustomerRepository customerRepository) {
         this.customerRepository = customerRepository;
     }
+
     public int getNumberOfCustomers() {
         return (int) customerRepository.count();
     }
-    public List<Customer> getAll(){return (List<Customer>) customerRepository.findAll();}
 
-    public Customer addNewCustomer(Customer customer){
+    public List<Customer> getAll() {
+        return (List<Customer>) customerRepository.findAll();
+    }
+
+    public Customer addNewCustomer(Customer customer) {
         return customerRepository.save(customer);
     }
 
     @Transactional
     public Customer updateCustomer(Customer updatedCustomer) {
         return customerRepository.save(updatedCustomer);
+    }
+
+    public Customer getCustomerById(Integer id) {
+        return customerRepository.findById(id).orElse(null);
     }
 }
