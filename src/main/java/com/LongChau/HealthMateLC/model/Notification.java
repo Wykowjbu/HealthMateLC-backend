@@ -16,9 +16,9 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "NotificationID")
     private Integer notificationId;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "SendAt", nullable = false)
+    @JoinColumn(name = "CustomerID", nullable = false)
     private Customer customer;
 
     @Column(name = "MessageType", nullable = false, length = 50)

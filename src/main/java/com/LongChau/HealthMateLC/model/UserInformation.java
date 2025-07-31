@@ -36,17 +36,6 @@ public class UserInformation {
 
     @Column(name = "AssignedDate")
     private LocalDateTime assignedDate = LocalDateTime.now();
-
-    @Override
-    public String toString() {
-        return "UserInformation{" +
-                "userId=" + userId +
-                ", fullName='" + fullName + '\'' +
-                ", phone='" + phone + '\'' +
-                ", email='" + email + '\'' +
-                ", assignedDate=" + assignedDate +
-                '}';
-    }
 }
 
 

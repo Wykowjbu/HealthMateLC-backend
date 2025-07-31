@@ -4,9 +4,6 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.sql.Date;
-import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -22,15 +19,15 @@ public class Schedule {
     private Integer scheduleId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "UserID", nullable = false)
+    @JoinColumn(name = "UserID")
     private User user;
 
-    @Column(name = "WorkDate", nullable = false) // Khớp với cột Date
-    private Date date;
+    @Column(name = "WorkDate", nullable = false)
+    private LocalDate workDate;
 
     @Column(name = "StartTime", nullable = false)
-    private Time startTime;
+    private LocalTime startTime;
 
-    @Column(name = "EndTime", nullable = false) // Thêm nullable = false nếu bắt buộc
-    private Time endTime;
+    @Column(name = "EndTime")
+    private LocalTime endTime;
 }

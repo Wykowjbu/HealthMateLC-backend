@@ -17,6 +17,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/employee/**").permitAll()
+                        .requestMatchers("/admin/**").permitAll()
+                        .requestMatchers("/customer-service/**").permitAll()
+                        .requestMatchers("/manager/**").permitAll()
+                        .anyRequest().authenticated()
+                );
 
         return http.build();
     }

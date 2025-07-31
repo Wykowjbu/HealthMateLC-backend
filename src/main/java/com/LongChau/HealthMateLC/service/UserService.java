@@ -50,11 +50,6 @@ import org.springframework.stereotype.Service;
             return userRepository.existsByUsername(username);
         }
 
-        public void resetPassword(Integer userId, String newPassword) {
-            User user = userRepository.findById(userId).orElse(null);
-            user.setPassword(newPassword);
-            userRepository.save(user);
-        }
 
 
         public List<String> getDistinctRoles() {
@@ -97,10 +92,6 @@ import org.springframework.stereotype.Service;
             if (user == null) return null;
             UserInformation info = user.getUserInformation();
             return (info != null) ? info.getPharmacy() : null;
-        }
-
-        public User findUserById(int id) {
-            return userRepository.findById(id).orElse(null);
         }
     }
 

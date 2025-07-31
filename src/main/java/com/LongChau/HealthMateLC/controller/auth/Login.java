@@ -1,8 +1,10 @@
 package com.LongChau.HealthMateLC.controller.auth;
 
 import com.LongChau.HealthMateLC.config.RedirectConfig;
+import com.LongChau.HealthMateLC.model.Pharmacy;
 import com.LongChau.HealthMateLC.model.User;
 import com.LongChau.HealthMateLC.repository.UserRepository;
+import com.LongChau.HealthMateLC.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,8 +13,10 @@ import jakarta.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
+@RequestMapping("/api/auth")
 public class Login {
     @Autowired
     private UserRepository userRepository;
@@ -20,56 +24,55 @@ public class Login {
     @Autowired
     private RedirectConfig redirectConfig;
 
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/users")
+    public ResponseEntity<?> getAllUsers() {
+        return ResponseEntity.ok(userRepository.findAll());
+    }
+
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody User loginRequest, HttpSession session) {
         Map<String, Object> response = new HashMap<>();
         try {
-            User user = userRepository.findUserByUsername(loginRequest.getUsername());
-            if (user != null
-                    && user.getPassword().equals(loginRequest.getPassword())
-                    && user.getUsername().equals(loginRequest.getUsername())) {
+            User user = userRepository.findByUsername(loginRequest.getUsername()).orElse(null);
+            if (user == null) {
+                response.put("success", false);
+                response.put("message", "Tên đăng nhập không tồn tại!");
+                return ResponseEntity.badRequest().body(response);
+            }
 
-                System.out.println("DEBUG: Setting session for user: " + user.getUsername());
-                System.out.println("DEBUG: Session ID before setting: " + session.getId());
+            Pharmacy pharmacy = userService.findPharmacyByUsername(loginRequest.getUsername());
 
-                // Chuẩn hóa role thành chữ thường
-                String normalizedRole = user.getRole().toLowerCase();
+            if (!user.getIsActive()) {
+                response.put("success", false);
+                response.put("message", "Tài khoản của bạn đã bị khóa, vui lòng liên hệ quản trị viên để biết thêm chi tiết.");
+                return ResponseEntity.badRequest().body(response);
+            }
 
-                // Set session attributes
+            if (pharmacy != null && !pharmacy.getIsActive()) {
+                response.put("success", false);
+                response.put("message", "Nhà thuốc của bạn hiện không hoạt động.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            if (user.getPassword().equals(loginRequest.getPassword())) {
                 session.setAttribute("currentUser", user);
-                session.setAttribute("userRole", normalizedRole);
-                session.setAttribute("userId", user.getUserId());
-
-                // Set session timeout
-                session.setMaxInactiveInterval(30 * 60); // 30 minutes
-
-                System.out.println("DEBUG: Session attributes after setting:");
-                System.out.println("DEBUG: currentUser: " + session.getAttribute("currentUser"));
-                System.out.println("DEBUG: userRole: " + session.getAttribute("userRole"));
-                System.out.println("DEBUG: userId: " + session.getAttribute("userId"));
-
-                // Lấy redirect URL
-                String redirectUrl = redirectConfig.getRedirectUrl(normalizedRole);
-                System.out.println("DEBUG: Redirect URL: " + redirectUrl);
-
-                response.put("redirectUrl", redirectUrl);
+                response.put("redirectUrl", redirectConfig.getRedirectUrl(user.getRole()));
                 response.put("success", true);
                 response.put("message", "Đăng nhập thành công!");
-                response.put("role", normalizedRole);
-                response.put("sessionId", session.getId());
-
-                return ResponseEntity.ok()
-                        .header("Set-Cookie", "JSESSIONID=" + session.getId() + "; Path=/; HttpOnly; SameSite=Lax; Domain=localhost")
-                        .body(response);
+                response.put("userId", user.getUserId());
+                return ResponseEntity.ok(response);
             } else {
                 response.put("success", false);
                 response.put("message", "Tên Đăng Nhập Hoặc Mật Khẩu Không Chính Xác!");
                 return ResponseEntity.badRequest().body(response);
             }
         } catch (Exception e) {
-            System.err.println("Login error: " + e.getMessage());
+            System.err.println("Login error " + e.getMessage());
             response.put("success", false);
-            response.put("message", "Có Lỗi Xảy Ra: " + e.getMessage());
+            response.put("message", "Có Lỗi Xảy Ra " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -95,7 +98,7 @@ public class Login {
 
             response.put("success", true);
             response.put("message", "Đăng xuất thành công!");
-            response.put("redirectUrl", "/index.html"); // Chuyển hướng về trang đăng nhập
+            response.put("redirectUrl", "index.html"); // Chuyển hướng về trang đăng nhập
 
             return ResponseEntity.ok()
                     .header("Set-Cookie", "JSESSIONID=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Domain=localhost")
