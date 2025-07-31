@@ -17,9 +17,7 @@ public class Notification {
     @Column(name = "NotificationID")
     private Integer notificationId;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "SendAt", nullable = false)
-    private Customer customer;
+
 
     @Column(name = "MessageType", nullable = false, length = 50)
     private String messageType;

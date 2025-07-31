@@ -23,6 +23,7 @@ public class InvoiceResponseDTO {
     private Integer pointsEarned;
     private String payment;
     private String status;
+    private String notes;  // Thêm trường notes
     private List<InvoiceDetailResponseDTO> invoiceDetails;
 
 
