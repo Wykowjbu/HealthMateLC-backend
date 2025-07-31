@@ -162,7 +162,7 @@ public class CustomerServiceController {
 
     @PostMapping("/send-email")
     public ResponseEntity<?> sendEmailToCustomer(@RequestBody SendEmailRequest request, HttpSession session) {
-        User user = (User) session.getAttribute("user");
+        User user = (User) session.getAttribute("currentUser");
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Unauthorized: Please login to send email"));
@@ -205,9 +205,40 @@ public class CustomerServiceController {
                     .body(Map.of("error", "Failed to send email: " + e.getMessage()));
         }
     }
+    
+    /**
+     * Lấy hóa đơn gần nhất đã thanh toán (có notes) của một khách hàng
+     */
+    @GetMapping("/invoices/reminders")
+    public ResponseEntity<Map<String, Object>> getLatestReminderInvoice(
+            @RequestParam("customerId") Integer customerId) {
+        List<Invoice> invoices = invoiceRepository.findByCustomerCustomerIdAndStatusOrderByInvoiceDateDesc(customerId,
+                "paid");
+        Optional<Invoice> latestInvoice = invoices.stream()
+                .filter(inv -> inv.getNotes() != null && !inv.getNotes().trim().isEmpty())
+                .findFirst();
+        if (latestInvoice.isPresent()) {
+            Invoice inv = latestInvoice.get();
+            Map<String, Object> map = new HashMap<>();
+            map.put("invoiceId", inv.getInvoiceId());
+            map.put("customerId", inv.getCustomer().getCustomerId());
+            map.put("notes", inv.getNotes());
+            map.put("customerEmail", inv.getCustomer().getEmail());
+            map.put("customerName", inv.getCustomer().getFullName());
+            map.put("invoiceDate", inv.getInvoiceDate());
+            map.put("purchaseDate", inv.getInvoiceDate());
+            map.put("status", inv.getStatus());
+            return ResponseEntity.ok(map);
+        } else {
+            return ResponseEntity.ok(new HashMap<>()); // Trả về object rỗng nếu không có hóa đơn phù hợp
+        }
+    }
+
     // #endregion
 
     // #region Statistics
+
+
     /**
      * Đếm tổng số tin nhắn đã gửi
      */
@@ -245,70 +276,7 @@ public class CustomerServiceController {
     }
     // #endregion
 
-    /**
-     * Lấy tất cả hóa đơn đã thanh toán trong 3 ngày gần nhất để nhắc nhở
-     */
-    @GetMapping("/invoices/reminders")
-    public ResponseEntity<List<Map<String, Object>>> getReminderInvoices() {
-        LocalDateTime end = LocalDateTime.now();
-        LocalDateTime start = end.minusDays(3);
-        List<Invoice> invoices = invoiceRepository.findByStatusAndInvoiceDateBetween(
-                "paid", start, end);
-        List<Map<String, Object>> reminders = invoices.stream()
-                .map(inv -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("invoiceId", inv.getInvoiceId());
-                    map.put("customerId", inv.getCustomer().getCustomerId());
-                    map.put("notes", inv.getNotes());
-                    map.put("customerEmail", inv.getCustomer().getEmail());
-                    map.put("customerName", inv.getCustomer().getFullName());
-                    map.put("invoiceDate", inv.getInvoiceDate());
-                    return map;
-                })
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(reminders);
-    }
-
-    /**
-     * Gửi nhắc nhở uống thuốc tới tất cả khách hàng có hóa đơn đã thanh toán trong
-     * vòng 3 ngày gần nhất
-     */
-    @PostMapping("/invoices/reminders/send")
-    public ResponseEntity<Map<String, Object>> sendBulkReminders(HttpSession session) {
-        User user = (User) session.getAttribute("user");
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Unauthorized: Please login to send reminders"));
-        }
-        LocalDateTime end = LocalDateTime.now();
-        LocalDateTime start = end.minusDays(3);
-        List<Invoice> invoices = invoiceRepository.findByStatusAndInvoiceDateBetween(
-                "paid", start, end);
-        int sentCount = 0;
-        int failedCount = 0;
-        for (Invoice inv : invoices) {
-            String email = inv.getCustomer().getEmail();
-            if (email == null || email.trim().isEmpty()) {
-                failedCount++;
-                continue;
-            }
-            String name = inv.getCustomer().getFullName();
-            String content = String.format(
-                    "Xin chào %s,\n\nLời nhắc uống thuốc:\n%s\n\nChúc bạn mau khỏe!", name, inv.getNotes());
-            try {
-                emailService.sendSimpleEmail(email, "Nhắc nhở uống thuốc - Long Châu", content);
-                sentCount++;
-            } catch (Exception e) {
-                failedCount++;
-            }
-        }
-        Map<String, Object> result = new HashMap<>();
-        result.put("total", invoices.size());
-        result.put("sentCount", sentCount);
-        result.put("failedCount", failedCount);
-        return ResponseEntity.ok(result);
-    }
-
+    
     // #region Customers
     /**
      * Lấy tất cả khách hàng

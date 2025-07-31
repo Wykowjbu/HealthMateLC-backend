@@ -35,5 +35,6 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Integer> {
     List<Invoice> findByPharmacyPharmacyIdAndStatus(Integer pharmacyId, String status);
     List<Invoice> findByStatus(String string);
     List<Invoice> findByPharmacyPharmacyIdAndStatusAndInvoiceDateBetween(Integer pharmacyId, String string,
-            LocalDateTime start, LocalDateTime end); 
+            LocalDateTime start, LocalDateTime end);
+    List<Invoice> findByCustomerCustomerIdAndStatusOrderByInvoiceDateDesc(Integer customerId, String string); 
 }
