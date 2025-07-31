@@ -21,13 +21,17 @@ public class SecurityConfig {
                 // Cho phép các endpoint authentication
                 .requestMatchers("/api/auth/**").permitAll()
 
+
                 // Cho phép các file static và pages
                 .requestMatchers("/", "/index.html", "/login.html", "/manager.html", "/employee.html").permitAll()
                 .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**", "/*.css", "/*.js").permitAll()
 
                 // Cho phép health check
                 .requestMatchers("/health/**").permitAll()
-
+                       
+                 // Cho phép truy cập ảnh
+                 .requestMatchers("/uploads/**").permitAll() 
+                                   
                 // Các nhóm endpoint từ nhánh dev
                 .requestMatchers("/employee/**").permitAll()
                 .requestMatchers("/admin/**").permitAll()

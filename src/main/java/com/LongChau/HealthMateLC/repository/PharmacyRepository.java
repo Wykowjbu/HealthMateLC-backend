@@ -1,57 +1,43 @@
 package com.LongChau.HealthMateLC.repository;
 
 import com.LongChau.HealthMateLC.model.Pharmacy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
 public interface PharmacyRepository extends JpaRepository<Pharmacy, Integer> {
+    // Basic existence checks
     boolean existsById(Integer pharmacyId);
     boolean existsByPharmacyName(String pharmacyName);
     boolean existsByPhone(String phone);
     boolean existsByEmail(String email);
 
-    @Query(value = "SELECT * FROM Pharmacies ORDER BY PharmacyID OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY",
-           nativeQuery = true)
-    List<Pharmacy> findPharmaciesPaginated(@Param("offset") int offset, @Param("size") int size);
+    // Search by individual fields with pagination
+    Page<Pharmacy> findByPharmacyNameContainingIgnoreCase(String pharmacyName, Pageable pageable);
+    Page<Pharmacy> findByPhoneContaining(String phone, Pageable pageable);
+    Page<Pharmacy> findByAddressContainingIgnoreCase(String address, Pageable pageable);
 
-    @Query("SELECT COUNT(p) FROM Pharmacy p")
-    long getTotalPharmacyCount();
+    // Search across 3 main fields with pagination
+    Page<Pharmacy> findByPharmacyNameContainingIgnoreCaseOrPhoneContainingOrAddressContainingIgnoreCase(
+            String pharmacyName, String phone, String address, Pageable pageable);
 
-    @Query(value = "SELECT * FROM Pharmacies p WHERE " +
-           "(:type = 'name' AND p.PharmacyName LIKE %:keyword%) OR " +
-           "(:type = 'phone' AND p.Phone LIKE %:keyword%) OR " +
-           "(:type = 'address' AND p.Address LIKE %:keyword%) OR " +
-           "(:type = 'email' AND p.Email LIKE %:keyword%) OR " +
-           "(:type = 'all' AND (p.PharmacyName LIKE %:keyword% OR p.Phone LIKE %:keyword% OR p.Address LIKE %:keyword% OR p.Email LIKE %:keyword%)) " +
-           "ORDER BY p.PharmacyID OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY",
-           nativeQuery = true)
-    List<Pharmacy> searchPharmaciesPaginated(@Param("keyword") String keyword,
-                                           @Param("type") String type,
-                                           @Param("offset") int offset,
-                                           @Param("size") int size);
+    // Search without pagination (for backward compatibility)
+    List<Pharmacy> findByPharmacyNameContainingIgnoreCase(String pharmacyName);
+    List<Pharmacy> findByPhoneContaining(String phone);
+    List<Pharmacy> findByAddressContainingIgnoreCase(String address);
+    List<Pharmacy> findByPharmacyNameContainingIgnoreCaseOrPhoneContainingOrAddressContainingIgnoreCase(
+            String pharmacyName, String phone, String address);
 
-    @Query(value = "SELECT COUNT(*) FROM Pharmacies p WHERE " +
-           "(:type = 'name' AND p.PharmacyName LIKE %:keyword%) OR " +
-           "(:type = 'phone' AND p.Phone LIKE %:keyword%) OR " +
-           "(:type = 'address' AND p.Address LIKE %:keyword%) OR " +
-           "(:type = 'email' AND p.Email LIKE %:keyword%) OR " +
-           "(:type = 'all' AND (p.PharmacyName LIKE %:keyword% OR p.Phone LIKE %:keyword% OR p.Address LIKE %:keyword% OR p.Email LIKE %:keyword%))",
-           nativeQuery = true)
-    long getSearchPharmacyCount(@Param("keyword") String keyword, @Param("type") String type);
+    // Get all active pharmacies
+    Page<Pharmacy> findByIsActiveTrue(Pageable pageable);
+    List<Pharmacy> findByIsActiveTrue();
 
-    @Query(value = "SELECT * FROM Pharmacies p WHERE " +
-           "(:type = 'name' AND p.PharmacyName LIKE %:keyword%) OR " +
-           "(:type = 'phone' AND p.Phone LIKE %:keyword%) OR " +
-           "(:type = 'address' AND p.Address LIKE %:keyword%) OR " +
-           "(:type = 'email' AND p.Email LIKE %:keyword%) OR " +
-           "(:type = 'all' AND (p.PharmacyName LIKE %:keyword% OR p.Phone LIKE %:keyword% OR p.Address LIKE %:keyword% OR p.Email LIKE %:keyword%)) " +
-           "ORDER BY p.PharmacyID",
-           nativeQuery = true)
-    List<Pharmacy> searchPharmacies(@Param("keyword") String keyword, @Param("type") String type);
+    // Get all inactive pharmacies
+    Page<Pharmacy> findByIsActiveFalse(Pageable pageable);
+    List<Pharmacy> findByIsActiveFalse();
 }
 

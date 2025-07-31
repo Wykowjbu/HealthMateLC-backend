@@ -1,9 +1,9 @@
 package com.LongChau.HealthMateLC.repository;
 
 import com.LongChau.HealthMateLC.model.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -11,48 +11,35 @@ import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Integer> {
+    // Basic existence checks
     Optional<Product> findByProductName(String productName);
     boolean existsByProductName(String productName);
 
-    @Query("SELECT p FROM Product p WHERE " +
-           "(:type = 'name' AND LOWER(p.productName) LIKE LOWER(CONCAT('%', :keyword, '%'))) OR " +
-           "(:type = 'type' AND LOWER(p.productType) LIKE LOWER(CONCAT('%', :keyword, '%'))) OR " +
-           "(:type = 'description' AND LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%'))) OR " +
-           "(:type = 'all' AND (LOWER(p.productName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(p.productType) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%'))))")
-    List<Product> searchProducts(@Param("keyword") String keyword, @Param("type") String type);
+    // Search by individual fields with pagination
+    Page<Product> findByProductNameContainingIgnoreCase(String productName, Pageable pageable);
+    Page<Product> findByProductTypeContainingIgnoreCase(String productType, Pageable pageable);
+    Page<Product> findByDescriptionContainingIgnoreCase(String description, Pageable pageable);
 
-    // Phương thức cho phân trang
-    @Query(value = "SELECT * FROM Products ORDER BY ProductID OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY",
-           nativeQuery = true)
-    List<Product> findProductsPaginated(@Param("offset") int offset, @Param("size") int size);
+    // Search across 3 main fields with pagination
+    Page<Product> findByProductNameContainingIgnoreCaseOrProductTypeContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+            String productName, String productType, String description, Pageable pageable);
 
-    // Đếm tổng số sản phẩm
-    @Query("SELECT COUNT(p) FROM Product p")
-    long getTotalProductCount();
+    // Search without pagination (for backward compatibility)
+    List<Product> findByProductNameContainingIgnoreCase(String productName);
+    List<Product> findByProductTypeContainingIgnoreCase(String productType);
+    List<Product> findByDescriptionContainingIgnoreCase(String description);
+    List<Product> findByProductNameContainingIgnoreCaseOrProductTypeContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+            String productName, String productType, String description);
 
-    // Tìm kiếm với phân trang
-    @Query(value = "SELECT * FROM Products p WHERE " +
-           "(:type = 'name' AND p.ProductName LIKE %:keyword%) OR " +
-           "(:type = 'type' AND p.ProductType LIKE %:keyword%) OR " +
-           "(:type = 'unit' AND p.Unit LIKE %:keyword%) OR " +
-           "(:type = 'description' AND p.Description LIKE %:keyword%) OR " +
-           "(:type = 'all' AND (p.ProductName LIKE %:keyword% OR p.ProductType LIKE %:keyword% OR p.Unit LIKE %:keyword% OR p.Description LIKE %:keyword%)) " +
-           "ORDER BY p.ProductID OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY",
-           nativeQuery = true)
-    List<Product> searchProductsPaginated(@Param("keyword") String keyword,
-                                        @Param("type") String type,
-                                        @Param("offset") int offset,
-                                        @Param("size") int size);
+    // Get products by price range
+    Page<Product> findByPriceBetween(double minPrice, double maxPrice, Pageable pageable);
+    List<Product> findByPriceBetween(double minPrice, double maxPrice);
 
-    // Đếm số kết quả tìm kiếm
-    @Query(value = "SELECT COUNT(*) FROM Products p WHERE " +
-           "(:type = 'name' AND p.ProductName LIKE %:keyword%) OR " +
-           "(:type = 'type' AND p.ProductType LIKE %:keyword%) OR " +
-           "(:type = 'unit' AND p.Unit LIKE %:keyword%) OR " +
-           "(:type = 'description' AND p.Description LIKE %:keyword%) OR " +
-           "(:type = 'all' AND (p.ProductName LIKE %:keyword% OR p.ProductType LIKE %:keyword% OR p.Unit LIKE %:keyword% OR p.Description LIKE %:keyword%))",
-           nativeQuery = true)
-    long getSearchProductCount(@Param("keyword") String keyword, @Param("type") String type);
+    // Get products with price greater than
+    Page<Product> findByPriceGreaterThan(double price, Pageable pageable);
+    List<Product> findByPriceGreaterThan(double price);
+
+    // Get products with price less than
+    Page<Product> findByPriceLessThan(double price, Pageable pageable);
+    List<Product> findByPriceLessThan(double price);
 }

@@ -19,7 +19,7 @@ public class InvoiceDTO {
     }
 
     public InvoiceDTO(Integer invoiceId, String pharmacyName, String userName, String customerName,
-                     List<InvoiceDetailDTO> invoiceDetails, BigDecimal totalPrice, String paymentMethod) {
+                      List<InvoiceDetailDTO> invoiceDetails, BigDecimal totalPrice, String paymentMethod) {
         this.invoiceId = invoiceId;
         this.pharmacyName = pharmacyName;
         this.userName = userName;
@@ -30,8 +30,8 @@ public class InvoiceDTO {
     }
 
     public InvoiceDTO(Integer invoiceId, String pharmacyName, String userName, String customerName,
-                     List<InvoiceDetailDTO> invoiceDetails, BigDecimal totalPrice, String paymentMethod,
-                     LocalDateTime invoiceDate, String status) {
+                      List<InvoiceDetailDTO> invoiceDetails, BigDecimal totalPrice, String paymentMethod,
+                      LocalDateTime invoiceDate, String status) {
         this.invoiceId = invoiceId;
         this.pharmacyName = pharmacyName;
         this.userName = userName;

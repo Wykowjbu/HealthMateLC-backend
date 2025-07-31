@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
 
 @RestController
 @RequestMapping("/admin")
@@ -150,8 +152,9 @@ public class AdminController {
     @PutMapping("/reset-password/{userId}")
     public ResponseEntity<?> resetPassword(@PathVariable Integer userId, @RequestBody ResetPasswordRequest resetPasswordRequest) {
         try{
+            System.out.println("NEW PAASS : "  + resetPasswordRequest.getNewPassword());
             userService.resetPassword(userId, resetPasswordRequest.getNewPassword());
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok().body(Map.of("success", true, "message", "Đặt lại mật khẩu thành công"));
         }catch (Exception e) {
             return ResponseEntity.badRequest().body(HttpStatus.NOT_FOUND);
         }
@@ -248,44 +251,50 @@ public class AdminController {
     }
 
     @GetMapping("/list-products")
-    public ResponseEntity<List<ProductDTO>> listProducts() {
-        List<Product> products = productService.getAllProducts();
-        List<ProductDTO> dtos = new ArrayList<>();
-        for (Product p : products) {
-            ProductDTO dto = new ProductDTO();
-            dto.setProductId(p.getProductId());
-            dto.setProductName(p.getProductName());
-            dto.setProductType(p.getProductType());
-            dto.setUnit(p.getUnit());
-            dto.setPrice(p.getPrice());
-            dto.setDescription(p.getDescription());
-            // Thêm số lượng tồn kho
-            dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
-            dtos.add(dto);
+    public ResponseEntity<List<ProductDTO>> getAllProducts() {
+        try {
+            List<Product> products = productService.getAllProducts();
+            List<ProductDTO> productDTOs = products.stream()
+                .map(p -> {
+                    ProductDTO dto = new ProductDTO();
+                    dto.setProductId(p.getProductId());
+                    dto.setProductName(p.getProductName());
+                    dto.setProductType(p.getProductType());
+                    dto.setUnit(p.getUnit());
+                    dto.setDescription(p.getDescription());
+                    dto.setPrice(p.getPrice());
+                    dto.setImageUrl(p.getImageUrl());
+                    dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
+                    return dto;
+                })
+                .collect(Collectors.toList());
+            return ResponseEntity.ok(productDTOs);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        return new ResponseEntity<>(dtos, HttpStatus.OK);
     }
 
     @GetMapping("/product/{id}")
-    public ResponseEntity<ProductDTO> getProduct(@PathVariable Integer id) {
-        System.out.println("Getting product with ID: " + id);
-        Optional<Product> product = productService.findById(id);
-        if (product.isPresent()) {
-            Product p = product.get();
-            System.out.println("Product found: " + p.getProductName());
-            ProductDTO dto = new ProductDTO();
-            dto.setProductId(p.getProductId());
-            dto.setProductName(p.getProductName());
-            dto.setProductType(p.getProductType());
-            dto.setUnit(p.getUnit());
-            dto.setPrice(p.getPrice());
-            dto.setDescription(p.getDescription());
-            // Thêm số lượng tồn kho
-            dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
-            return ResponseEntity.ok(dto);
+    public ResponseEntity<ProductDTO> getProductById(@PathVariable Integer id) {
+        try {
+            Optional<Product> product = productService.getProductById(id);
+            if (product.isPresent()) {
+                Product p = product.get();
+                ProductDTO dto = new ProductDTO();
+                dto.setProductId(p.getProductId());
+                dto.setProductName(p.getProductName());
+                dto.setProductType(p.getProductType());
+                dto.setUnit(p.getUnit());
+                dto.setDescription(p.getDescription());
+                dto.setPrice(p.getPrice());
+                dto.setImageUrl(p.getImageUrl());
+                return ResponseEntity.ok(dto);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        System.out.println("Product not found with ID: " + id);
-        return ResponseEntity.notFound().build();
     }
 
     @PutMapping("/edit-product/{id}")
@@ -334,6 +343,7 @@ public class AdminController {
             dto.setUnit(p.getUnit());
             dto.setPrice(p.getPrice());
             dto.setDescription(p.getDescription());
+                                dto.setImageUrl(p.getImageUrl());
             // Thêm số lượng tồn kho
             dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
             dtos.add(dto);
@@ -450,10 +460,10 @@ public class AdminController {
     }
 
     @PutMapping("/update-product-quantity")
-    public ResponseEntity<Map<String, String>> updateProductQuantity(
+    public ResponseEntity<Map<String, Object>> updateProductQuantity(
             @Valid @RequestBody InventoryDTO inventoryDTO,
             BindingResult bindingResult) {
-        Map<String, String> response = new HashMap<>();
+        Map<String, Object> response = new HashMap<>();
 
         // Check validation errors from Bean Validation
         if (bindingResult.hasErrors()) {
@@ -472,13 +482,28 @@ public class AdminController {
             // Cập nhật số lượng
             inventoryService.updateProductQuantity(inventoryDTO);
 
+            // Lấy thông tin sản phẩm đã cập nhật
+            Optional<Product> productOpt = productService.findById(inventoryDTO.getProductId());
+            if (productOpt.isPresent()) {
+                Product product = productOpt.get();
+                Map<String, Object> productInfo = new HashMap<>();
+                productInfo.put("productId", product.getProductId());
+                productInfo.put("productName", product.getProductName());
+                productInfo.put("quantity", inventoryService.getProductQuantity(product.getProductId()));
+                
+                response.put("product", productInfo);
+            }
+
             response.put("message", "Cập nhật số lượng thành công");
+            response.put("success", true);
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (RuntimeException e) {
             response.put("message", e.getMessage());
+            response.put("success", false);
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             response.put("message", "Lỗi khi cập nhật số lượng: " + e.getMessage());
+            response.put("success", false);
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -518,64 +543,65 @@ public class AdminController {
 
     // Thêm các endpoint mới cho phân trang
     @GetMapping("/list-products-paginated")
-    public ResponseEntity<Map<String, Object>> listProductsPaginated(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+    public ResponseEntity<Map<String, Object>> getProductsPaginated(
+            @RequestParam int page,
+            @RequestParam int size) {
+        try {
+            // Debug logging
+            System.out.println("DEBUG: Requested page=" + page + ", size=" + size);
+            
+            Page<Product> productPage = productService.getProductsPaginated(page, size);
+            
+            // Debug logging
+            System.out.println("DEBUG: Total elements=" + productPage.getTotalElements());
+            System.out.println("DEBUG: Total pages=" + productPage.getTotalPages());
+            System.out.println("DEBUG: Current page=" + productPage.getNumber());
+            System.out.println("DEBUG: Page size=" + productPage.getSize());
+            System.out.println("DEBUG: Content size=" + productPage.getContent().size());
 
-        Map<String, Object> response = new HashMap<>();
+            List<ProductDTO> productDTOs = productPage.getContent().stream()
+                .map(p -> {
+                    ProductDTO dto = new ProductDTO();
+                    dto.setProductId(p.getProductId());
+                    dto.setProductName(p.getProductName());
+                    dto.setProductType(p.getProductType());
+                    dto.setUnit(p.getUnit());
+                    dto.setDescription(p.getDescription());
+                    dto.setPrice(p.getPrice());
+                    dto.setImageUrl(p.getImageUrl());
+                    dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
+                    return dto;
+                })
+                .collect(Collectors.toList());
 
-        // Tính offset
-        int offset = page * size;
+            Map<String, Object> response = new HashMap<>();
+            response.put("products", productDTOs);
+            response.put("currentPage", productPage.getNumber());
+            response.put("totalPages", productPage.getTotalPages());
+            response.put("totalProducts", productPage.getTotalElements());
+            response.put("pageSize", productPage.getSize());
 
-        // Lấy tổng số sản phẩm
-        long totalProducts = productService.getTotalProductCount();
-
-        // Lấy sản phẩm theo phân trang
-        List<Product> products = productService.getProductsPaginated(offset, size);
-
-        // Convert to DTO
-        List<ProductDTO> dtos = new ArrayList<>();
-        for (Product p : products) {
-            ProductDTO dto = new ProductDTO();
-            dto.setProductId(p.getProductId());
-            dto.setProductName(p.getProductName());
-            dto.setProductType(p.getProductType());
-            dto.setUnit(p.getUnit());
-            dto.setPrice(p.getPrice());
-            dto.setDescription(p.getDescription());
-            // Thêm số lượng tồn kho
-            dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
-            dtos.add(dto);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("ERROR in getProductsPaginated: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-
-        response.put("products", dtos);
-        response.put("totalItems", totalProducts);
-        response.put("totalPages", (int) Math.ceil((double) totalProducts / size));
-        response.put("currentPage", page);
-        response.put("pageSize", size);
-
-        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/list-pharmacies-paginated")
     public ResponseEntity<Map<String, Object>> listPharmaciesPaginated(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam int page,
+            @RequestParam int size) {
 
         Map<String, Object> response = new HashMap<>();
 
-        // Tính offset
-        int offset = page * size;
-
-        // Lấy tổng số nhà thuốc
-        long totalPharmacies = pharmacyService.getTotalPharmacyCount();
-
-        // Lấy nhà thuốc theo phân trang
-        List<Pharmacy> pharmacies = pharmacyService.getPharmaciesPaginated(offset, size);
+        // Lấy nhà thuốc theo phân trang sử dụng Pageable
+        Page<Pharmacy> pharmacyPage = pharmacyService.getPharmaciesPaginated(page, size);
 
         // Convert to Map để tránh Hibernate proxy
         List<Map<String, Object>> pharmacyMaps = new ArrayList<>();
-        for (Pharmacy p : pharmacies) {
+        for (Pharmacy p : pharmacyPage.getContent()) {
             Map<String, Object> map = new HashMap<>();
             map.put("pharmacyId", p.getPharmacyId());
             map.put("pharmacyName", p.getPharmacyName());
@@ -601,10 +627,10 @@ public class AdminController {
         }
 
         response.put("pharmacies", pharmacyMaps);
-        response.put("totalItems", totalPharmacies);
-        response.put("totalPages", (int) Math.ceil((double) totalPharmacies / size));
-        response.put("currentPage", page);
-        response.put("pageSize", size);
+        response.put("totalItems", pharmacyPage.getTotalElements());
+        response.put("totalPages", pharmacyPage.getTotalPages());
+        response.put("currentPage", pharmacyPage.getNumber());
+        response.put("pageSize", pharmacyPage.getSize());
 
         return ResponseEntity.ok(response);
     }
@@ -613,57 +639,54 @@ public class AdminController {
     public ResponseEntity<Map<String, Object>> searchProductsPaginated(
             @RequestParam String keyword,
             @RequestParam(defaultValue = "all") String type,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam int page,
+            @RequestParam int size) {
+        try {
+            Page<Product> productPage = productService.searchProductsPaginated(keyword, type, page, size);
 
-        Map<String, Object> response = new HashMap<>();
-        int offset = page * size;
+            List<ProductDTO> productDTOs = productPage.getContent().stream()
+                .map(p -> {
+                    ProductDTO dto = new ProductDTO();
+                    dto.setProductId(p.getProductId());
+                    dto.setProductName(p.getProductName());
+                    dto.setProductType(p.getProductType());
+                    dto.setUnit(p.getUnit());
+                    dto.setDescription(p.getDescription());
+                    dto.setPrice(p.getPrice());
+                    dto.setImageUrl(p.getImageUrl());
+                    dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
+                    return dto;
+                })
+                .collect(Collectors.toList());
 
+            Map<String, Object> response = new HashMap<>();
+            response.put("products", productDTOs);
+            response.put("currentPage", productPage.getNumber());
+            response.put("totalPages", productPage.getTotalPages());
+            response.put("totalProducts", productPage.getTotalElements());
+            response.put("pageSize", productPage.getSize());
 
-        long totalProducts = productService.getSearchProductCount(keyword, type);
-        List<Product> products = productService.searchProductsPaginated(keyword, type, offset, size);
-
-        // Convert to DTO
-        List<ProductDTO> dtos = new ArrayList<>();
-        for (Product p : products) {
-            ProductDTO dto = new ProductDTO();
-            dto.setProductId(p.getProductId());
-            dto.setProductName(p.getProductName());
-            dto.setProductType(p.getProductType());
-            dto.setUnit(p.getUnit());
-            dto.setPrice(p.getPrice());
-            dto.setDescription(p.getDescription());
-            // Thêm số lượng tồn kho
-            dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
-            dtos.add(dto);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-
-        response.put("products", dtos);
-        response.put("totalItems", totalProducts);
-        response.put("totalPages", (int) Math.ceil((double) totalProducts / size));
-        response.put("currentPage", page);
-        response.put("pageSize", size);
-
-        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/search-pharmacies-paginated")
     public ResponseEntity<Map<String, Object>> searchPharmaciesPaginated(
             @RequestParam String keyword,
             @RequestParam(defaultValue = "all") String type,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam int page,
+            @RequestParam int size) {
 
         Map<String, Object> response = new HashMap<>();
-        int offset = page * size;
 
-        // Lấy kết quả tìm kiếm với phân trang
-        long totalPharmacies = pharmacyService.getSearchPharmacyCount(keyword, type);
-        List<Pharmacy> pharmacies = pharmacyService.searchPharmaciesPaginated(keyword, type, offset, size);
+        // Lấy nhà thuốc theo tìm kiếm và phân trang sử dụng Pageable
+        Page<Pharmacy> pharmacyPage = pharmacyService.searchPharmaciesPaginated(keyword, type, page, size);
 
-        // Convert to Map
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (Pharmacy p : pharmacies) {
+        // Convert to Map để tránh Hibernate proxy
+        List<Map<String, Object>> pharmacyMaps = new ArrayList<>();
+        for (Pharmacy p : pharmacyPage.getContent()) {
             Map<String, Object> map = new HashMap<>();
             map.put("pharmacyId", p.getPharmacyId());
             map.put("pharmacyName", p.getPharmacyName());
@@ -685,14 +708,14 @@ public class AdminController {
                 managerNames = String.join(", ", names);
             }
             map.put("manager", managerNames.isEmpty() ? "Chưa gán" : managerNames);
-            result.add(map);
+            pharmacyMaps.add(map);
         }
 
-        response.put("pharmacies", result);
-        response.put("totalItems", totalPharmacies);
-        response.put("totalPages", (int) Math.ceil((double) totalPharmacies / size));
-        response.put("currentPage", page);
-        response.put("pageSize", size);
+        response.put("pharmacies", pharmacyMaps);
+        response.put("totalItems", pharmacyPage.getTotalElements());
+        response.put("totalPages", pharmacyPage.getTotalPages());
+        response.put("currentPage", pharmacyPage.getNumber());
+        response.put("pageSize", pharmacyPage.getSize());
 
         return ResponseEntity.ok(response);
     }
@@ -766,5 +789,41 @@ public class AdminController {
         }
         return ResponseEntity.ok(profile);
     }
-}
+@GetMapping("/reload-products-after-update")
+    public ResponseEntity<Map<String, Object>> reloadProductsAfterUpdate(
+            @RequestParam int page,
+            @RequestParam int size) {
+        try {
+            Page<Product> productPage = productService.getProductsPaginated(page, size);
 
+            List<ProductDTO> productDTOs = productPage.getContent().stream()
+                .map(p -> {
+                    ProductDTO dto = new ProductDTO();
+                    dto.setProductId(p.getProductId());
+                    dto.setProductName(p.getProductName());
+                    dto.setProductType(p.getProductType());
+                    dto.setUnit(p.getUnit());
+                    dto.setDescription(p.getDescription());
+                    dto.setPrice(p.getPrice());
+                    dto.setImageUrl(p.getImageUrl());
+                    dto.setQuantity(inventoryService.getProductQuantity(p.getProductId()));
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("products", productDTOs);
+            response.put("currentPage", productPage.getNumber());
+            response.put("totalPages", productPage.getTotalPages());
+            response.put("totalProducts", productPage.getTotalElements());
+            response.put("pageSize", productPage.getSize());
+            response.put("message", "Data reloaded successfully");
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Error reloading data: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+}
