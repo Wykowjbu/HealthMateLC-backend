@@ -1,10 +1,6 @@
 package com.LongChau.HealthMateLC.controller;
 
-import com.LongChau.HealthMateLC.model.Customer;
-import com.LongChau.HealthMateLC.model.Product;
-import com.LongChau.HealthMateLC.model.Schedule;
 import com.LongChau.HealthMateLC.repository.CustomerRepository;
-import com.LongChau.HealthMateLC.model.Invoice;
 import com.LongChau.HealthMateLC.dto.ScheduleDTO;
 import com.LongChau.HealthMateLC.model.*;
 import com.LongChau.HealthMateLC.repository.TimesheetRepository;
@@ -700,21 +696,21 @@ public class EmployeeController {
             // Sau khi tạo đơn hàng thành công, gửi email cho khách hàng
             // ==============================================================
 
-//            String customerEmail = CustomerRepository.findEmailByCustomerId(createdInvoice.getCustomerId());
-//            String takeNote = createdInvoice.getNotes(); // đợi Huy update
-//
-//            String surveyLink = "https://longchau.vn/survey?invoiceId=" + createdInvoice.getInvoiceId();
-//            String subject = "Thông tin đơn hàng và khảo sát từ Long Châu";
-//            String content = "Cảm ơn bạn đã mua hàng tại Long Châu!\n\nHướng dẫn sử dụng: "
-//                    + (takeNote != null ? takeNote : "Không có hướng dẫn") +
-//                    "\n\nVui lòng dành chút thời gian để hoàn thành khảo sát dịch vụ tại đây: " + surveyLink;
-//            if (customerEmail != null && !customerEmail.isEmpty()) {
-//                try {
-//                    emailService.sendSimpleEmail(customerEmail, subject, content);
-//                } catch (Exception e) {
-//                    System.err.println("Lỗi gửi email sau khi tạo đơn hàng: " + e.getMessage());
-//                }
-//            }
+            String customerEmail = customerService.getCustomerById(createdInvoice.getCustomerId()).getEmail();
+            String takeNote = createdInvoice.getNotes(); // đợi Huy update
+            System.out.println("Customer email: " + customerEmail);
+            String surveyLink = "https://wykowjbu.github.io/survey.html?customerId="+createdInvoice.getCustomerId()+"&pharmacyId="+ createdInvoice.getPharmacyId()+"&invoiceId=" + createdInvoice.getInvoiceId();
+            String subject = "Thông tin đơn hàng và khảo sát từ Long Châu";
+            String content = "Cảm ơn bạn đã mua hàng tại Long Châu!\n\nHướng dẫn sử dụng: "
+                    + (takeNote != null ? takeNote : "Không có hướng dẫn") +
+                    "\n\nVui lòng dành chút thời gian để hoàn thành khảo sát dịch vụ tại đây: " + surveyLink;
+            if (customerEmail != null && !customerEmail.isEmpty()) {
+                try {
+                    emailService.sendSimpleEmail(customerEmail, subject, content);
+                } catch (Exception e) {
+                    System.err.println("Lỗi gửi email sau khi tạo đơn hàng: " + e.getMessage());
+                }
+            }
             // ==============================================================
             return ResponseEntity.ok(createdInvoice);
         } catch (RuntimeException e) {
