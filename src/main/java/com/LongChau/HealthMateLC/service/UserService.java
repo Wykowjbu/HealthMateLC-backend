@@ -50,6 +50,11 @@ public class UserService {
         return userRepository.existsByUsername(username);
     }
 
+    public void resetPassword(Integer userId, String newPassword) {
+        User user = userRepository.findById(userId).orElse(null);
+        user.setPassword(newPassword);
+        userRepository.save(user);
+    }
 
 
     public List<String> getDistinctRoles() {
