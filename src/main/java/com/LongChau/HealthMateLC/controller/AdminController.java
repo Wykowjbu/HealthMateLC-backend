@@ -74,6 +74,7 @@ public class AdminController {
         Map<String, Object> map1 = new HashMap<>();
         pharmacies.forEach(pharmacy -> {
             List<UserInformationDTO> listUser = userInformationService.getEmployeeAndManagerByPharmacyId(pharmacy.getPharmacyId());
+            System.out.println(listUser);
             map1.put(String.valueOf(pharmacy.getPharmacyId()), listUser);
         });
         map.put("listUsersByPharmacy", map1);
@@ -134,6 +135,25 @@ public class AdminController {
     public ResponseEntity<List<String>> listRoles() {
         List<String> roles = userService.getDistinctRoles();
         return new ResponseEntity<>(roles, HttpStatus.OK);
+    }
+
+    @PutMapping("/update-account/{userId}")
+    public ResponseEntity<UserInformationDTO> updateAccount(@PathVariable("userId") Integer userId, @RequestBody UserInformationDTO userInformationDTO) {
+        UserInformationDTO userInformationDtoResult = userService.updateUserAndUserInformation(userInformationDTO, userId);
+        if (userInformationDtoResult != null) {
+            return new ResponseEntity<>(userInformationDtoResult, HttpStatus.OK);
+        }
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    @PutMapping("/reset-password/{userId}")
+    public ResponseEntity<?> resetPassword(@PathVariable Integer userId, @RequestBody ResetPasswordRequest resetPasswordRequest) {
+        try{
+            userService.resetPassword(userId, resetPasswordRequest.getNewPassword());
+            return ResponseEntity.ok().build();
+        }catch (Exception e) {
+            return ResponseEntity.badRequest().body(HttpStatus.NOT_FOUND);
+        }
     }
 
     @PostMapping("/add-account")
@@ -746,3 +766,4 @@ public class AdminController {
         return ResponseEntity.ok(profile);
     }
 }
+
