@@ -16,6 +16,8 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authorize -> authorize
+                // Cho phép các endpoint của servey
+                .requestMatchers("/", "/survey.html").permitAll()
                 // Cho phép các endpoint authentication
                 .requestMatchers("/api/auth/**").permitAll()
 
@@ -43,7 +45,6 @@ public class SecurityConfig {
             // Tắt form login mặc định và HTTP Basic
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable());
-
         return http.build();
     }
 }

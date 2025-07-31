@@ -1,8 +1,12 @@
 package com.LongChau.HealthMateLC.controller;
 
+import com.LongChau.HealthMateLC.model.Customer;
+import com.LongChau.HealthMateLC.model.Product;
+import com.LongChau.HealthMateLC.model.Schedule;
+import com.LongChau.HealthMateLC.repository.CustomerRepository;
+import com.LongChau.HealthMateLC.model.Invoice;
 import com.LongChau.HealthMateLC.dto.ScheduleDTO;
 import com.LongChau.HealthMateLC.model.*;
-import com.LongChau.HealthMateLC.repository.CustomerRepository;
 import com.LongChau.HealthMateLC.repository.TimesheetRepository;
 import com.LongChau.HealthMateLC.repository.UserRepository;
 import com.LongChau.HealthMateLC.dto.EmployeeInfoDTO;
@@ -10,6 +14,7 @@ import com.LongChau.HealthMateLC.dto.UserHistoryDTO;
 import com.LongChau.HealthMateLC.dto.CreateOrderRequestDTO;
 import com.LongChau.HealthMateLC.dto.InvoiceResponseDTO;
 import com.LongChau.HealthMateLC.service.CustomerService;
+import com.LongChau.HealthMateLC.service.EmailService;
 import com.LongChau.HealthMateLC.service.ProductsService;
 import com.LongChau.HealthMateLC.service.ScheduleService;
 import com.LongChau.HealthMateLC.service.InvoiceService;
@@ -49,6 +54,7 @@ public class EmployeeController {
     @Autowired
     private UserHistoryService userHistoryService;
     @Autowired
+    private EmailService emailService;
     private WorkScheduleService workScheduleService;
 
     @GetMapping("/profile")
@@ -602,18 +608,19 @@ public class EmployeeController {
         }
     }
 
+
     @GetMapping("/danh-sach-khach-hang")
-    public ResponseEntity<List<Customer>> getAllCustomers(){
-        List<Customer> customers=customerService.getAll();
+    public ResponseEntity<List<Customer>> getAllCustomers() {
+        List<Customer> customers = customerService.getAll();
         return ResponseEntity.ok(customers);
     }
 
     @PostMapping("/tao-moi-khach-hang")
-    public ResponseEntity<Customer> createCustomer(@RequestBody Customer customer){
+    public ResponseEntity<Customer> createCustomer(@RequestBody Customer customer) {
         if (isPhoneOrEmailExists(customer)) {
             return ResponseEntity.badRequest().body(customer);
         }
-        Customer addNewCustomer=customerService.addNewCustomer(customer);
+        Customer addNewCustomer = customerService.addNewCustomer(customer);
         return ResponseEntity.ok(addNewCustomer);
     }
 
@@ -644,14 +651,14 @@ public class EmployeeController {
     }
 
     @GetMapping("/danh-sach-san-pham")
-    public ResponseEntity<List<Product>> getAllProducts(){
-        List<Product> list= productsService.getAll();
+    public ResponseEntity<List<Product>> getAllProducts() {
+        List<Product> list = productsService.getAll();
         return ResponseEntity.ok(list);
-        //phanhuy
+        // phanhuy
     }
 
-    @GetMapping ("/lich-lam-viec")
-    public  ResponseEntity<List<Schedule>> getScheduleByUserId(@RequestParam Integer userId) {
+    @GetMapping("/lich-lam-viec")
+    public ResponseEntity<List<Schedule>> getScheduleByUserId(@RequestParam Integer userId) {
         List<Schedule> schedules = scheduleService.getSchedulesByUserId(userId);
         return ResponseEntity.ok(schedules);
     }
@@ -688,10 +695,28 @@ public class EmployeeController {
 
     @PostMapping("/tao-don-hang")
     public ResponseEntity<?> createOrder(@RequestBody CreateOrderRequestDTO orderRequest) {
-        System.out.println(orderRequest.getStatus()+ " thong tin o day ---------------------------------------------");
-
+        System.out.println(orderRequest.getStatus() + " thong tin o day ---------------------------------------------");
         try {
             InvoiceResponseDTO createdInvoice = invoiceService.createOrder(orderRequest);
+            // ==============================================================
+            // Sau khi tạo đơn hàng thành công, gửi email cho khách hàng
+            // ==============================================================
+            String customerEmail = CustomerRepository.findEmailByCustomerId(createdInvoice.getCustomerId());
+            String takeNote = createdInvoice.getNotes(); // đợi Huy update
+            // Link khảo sát (có thể thay đổi thành link thực tế)
+            String surveyLink = "https://longchau.vn/survey?invoiceId=" + createdInvoice.getInvoiceId();
+            String subject = "Thông tin đơn hàng và khảo sát từ Long Châu";
+            String content = "Cảm ơn bạn đã mua hàng tại Long Châu!\n\nHướng dẫn sử dụng: "
+                    + (takeNote != null ? takeNote : "Không có hướng dẫn") +
+                    "\n\nVui lòng dành chút thời gian để hoàn thành khảo sát dịch vụ tại đây: " + surveyLink;
+            if (customerEmail != null && !customerEmail.isEmpty()) {
+                try {
+                    emailService.sendSimpleEmail(customerEmail, subject, content);
+                } catch (Exception e) {
+                    System.err.println("Lỗi gửi email sau khi tạo đơn hàng: " + e.getMessage());
+                }
+            }
+            // ==============================================================
             return ResponseEntity.ok(createdInvoice);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body("Error creating order123: " + e.getMessage());

@@ -13,6 +13,13 @@ import com.LongChau.HealthMateLC.dto.CustomerService.FeedbackDTO;
 import com.LongChau.HealthMateLC.dto.CustomerService.PharmacyDTO;
 import com.LongChau.HealthMateLC.model.Feedback;
 import com.LongChau.HealthMateLC.model.User;
+import com.LongChau.HealthMateLC.model.Customer;
+import com.LongChau.HealthMateLC.model.Pharmacy;
+import com.LongChau.HealthMateLC.model.Invoice;
+import com.LongChau.HealthMateLC.repository.CustomerRepository;
+import com.LongChau.HealthMateLC.repository.PharmacyRepository;
+import com.LongChau.HealthMateLC.repository.InvoiceRepository;
+import com.LongChau.HealthMateLC.dto.FeedbackRequest;
 
 @Service
 public class FeedbackService {
@@ -20,6 +27,12 @@ public class FeedbackService {
     private FeedbackRepository feedbackRepository;
     @Autowired
     private com.LongChau.HealthMateLC.repository.UserRepository userRepository;
+    @Autowired
+    private CustomerRepository customerRepository;
+    @Autowired
+    private PharmacyRepository pharmacyRepository;
+    @Autowired
+    private InvoiceRepository invoiceRepository;
 
     // Lấy tất cả đánh giá
     public List<FeedbackDTO> getAllFeedback() {
@@ -98,7 +111,7 @@ public class FeedbackService {
                     throw new IllegalArgumentException("User không tồn tại");
                 }
                 feedback.setHandledByUser(userOpt.get());
-                feedback.setHandledDate(LocalDateTime.now());  
+                feedback.setHandledDate(LocalDateTime.now());
             }
             return feedbackRepository.save(feedback);
         }
@@ -121,6 +134,26 @@ public class FeedbackService {
             return 0.0;
         double sum = all.stream().mapToInt(Feedback::getRating).sum();
         return sum / all.size();
+    }
+
+    /**
+     * Create a new Feedback from request payload
+     */
+    public Feedback createFeedback(FeedbackRequest request) {
+        Customer customer = customerRepository.findById(request.getCustomerId())
+                .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+        Pharmacy pharmacy = pharmacyRepository.findById(request.getPharmacyId())
+                .orElseThrow(() -> new IllegalArgumentException("Pharmacy not found"));
+        Invoice invoice = invoiceRepository.findById(request.getInvoiceId())
+                .orElseThrow(() -> new IllegalArgumentException("Invoice not found"));
+        Feedback feedback = new Feedback();
+        feedback.setCustomer(customer);
+        feedback.setPharmacy(pharmacy);
+        feedback.setInvoice(invoice);
+        feedback.setRating(request.getRating());
+        feedback.setComment(request.getComment());
+        feedback.setStatus("REJECTED"); // Ensure status is always set
+        return feedbackRepository.save(feedback);
     }
 
 }
