@@ -152,8 +152,9 @@ public class AdminController {
     @PutMapping("/reset-password/{userId}")
     public ResponseEntity<?> resetPassword(@PathVariable Integer userId, @RequestBody ResetPasswordRequest resetPasswordRequest) {
         try{
+            System.out.println("NEW PAASS : "  + resetPasswordRequest.getNewPassword());
             userService.resetPassword(userId, resetPasswordRequest.getNewPassword());
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok().body(Map.of("success", true, "message", "Đặt lại mật khẩu thành công"));
         }catch (Exception e) {
             return ResponseEntity.badRequest().body(HttpStatus.NOT_FOUND);
         }
