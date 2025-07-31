@@ -92,10 +92,7 @@ public class EmployeeController {
     @GetMapping("/inventory")
     public ResponseEntity<List<Inventory>> getAllInventory() {
         List<Inventory> inventoryList = inventoryService.getAll();
-        System.out.println("---------------------------------------------------------");
-        for (Inventory i: inventoryList) {
-            System.out.println("Product ID: " + i.getProductId() + ", Quantity: " + i.getNumber());
-        }
+
         return ResponseEntity.ok(inventoryList);
     }
 
