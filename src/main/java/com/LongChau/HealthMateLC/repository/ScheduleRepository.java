@@ -19,9 +19,9 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Integer> {
     @Query("SELECT s FROM Schedule s WHERE s.user.userId = :userId")
     List<Schedule> findByUserId(@Param("userId") Integer userId);
 
-    @Query("SELECT s FROM Schedule s WHERE s.workDate = :workDate")
+    @Query("SELECT s FROM Schedule s WHERE s.date = :workDate")
     List<Schedule> findByWorkDate(@Param("workDate") LocalDate workDate);
 
-    @Query("SELECT s FROM Schedule s WHERE s.user.userId = :userId AND s.workDate = :workDate")
+    @Query("SELECT s FROM Schedule s WHERE s.user.userId = :userId AND s.date = :workDate")
     List<Schedule> findByUserIdAndWorkDate(@Param("userId") Integer userId, @Param("workDate") LocalDate workDate);
 }

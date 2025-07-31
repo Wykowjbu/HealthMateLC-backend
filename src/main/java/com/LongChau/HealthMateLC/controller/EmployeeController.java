@@ -13,14 +13,7 @@ import com.LongChau.HealthMateLC.dto.EmployeeInfoDTO;
 import com.LongChau.HealthMateLC.dto.UserHistoryDTO;
 import com.LongChau.HealthMateLC.dto.CreateOrderRequestDTO;
 import com.LongChau.HealthMateLC.dto.InvoiceResponseDTO;
-import com.LongChau.HealthMateLC.service.CustomerService;
-import com.LongChau.HealthMateLC.service.EmailService;
-import com.LongChau.HealthMateLC.service.ProductsService;
-import com.LongChau.HealthMateLC.service.ScheduleService;
-import com.LongChau.HealthMateLC.service.InvoiceService;
-import com.LongChau.HealthMateLC.service.UserInformationService;
-import com.LongChau.HealthMateLC.service.UserHistoryService;
-import com.LongChau.HealthMateLC.service.WorkScheduleService;
+import com.LongChau.HealthMateLC.service.*;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -55,7 +48,11 @@ public class EmployeeController {
     private UserHistoryService userHistoryService;
     @Autowired
     private EmailService emailService;
+    @Autowired
     private WorkScheduleService workScheduleService;
+
+    @Autowired
+    private InventoryService inventoryService;
 
     @GetMapping("/profile")
     public ResponseEntity<?> getEmployeeProfile(
@@ -628,7 +625,7 @@ public class EmployeeController {
     public ResponseEntity<Customer> updateCustomerById(@PathVariable Integer id, @RequestBody Customer customer) {
         // Set the customer ID from path variable
         customer.setCustomerId(id);
-        if (!isPhoneOrEmailExists(customer)) {
+        if (isPhoneOrEmailExists(customer)) {
             return ResponseEntity.badRequest().body(customer);
         }
         Customer updatedCustomer = customerService.updateCustomer(customer);
@@ -669,9 +666,9 @@ public class EmployeeController {
         return ResponseEntity.ok(orderHistory);
     }
 
-    @GetMapping("/dach-sach-don-hang-hom-nay")
-    public ResponseEntity<List<Invoice>> getTodayInvoices() {
-        List<Invoice> todayInvoices = invoiceService.getAll(); // Assuming you want all invoices for today
+    @GetMapping("/danh-sach-don-hang")
+    public ResponseEntity<List<InvoiceResponseDTO>> getTodayInvoices() {
+        List<InvoiceResponseDTO> todayInvoices = invoiceService.getAllInvoicesWithDetails();
         System.out.println(todayInvoices);
         return ResponseEntity.ok(todayInvoices);
     }
@@ -696,26 +693,28 @@ public class EmployeeController {
     @PostMapping("/tao-don-hang")
     public ResponseEntity<?> createOrder(@RequestBody CreateOrderRequestDTO orderRequest) {
         System.out.println(orderRequest.getStatus() + " thong tin o day ---------------------------------------------");
+        System.out.println(orderRequest);
         try {
             InvoiceResponseDTO createdInvoice = invoiceService.createOrder(orderRequest);
             // ==============================================================
             // Sau khi tạo đơn hàng thành công, gửi email cho khách hàng
             // ==============================================================
-            String customerEmail = CustomerRepository.findEmailByCustomerId(createdInvoice.getCustomerId());
-            String takeNote = createdInvoice.getNotes(); // đợi Huy update
-            // Link khảo sát (có thể thay đổi thành link thực tế)
-            String surveyLink = "https://longchau.vn/survey?invoiceId=" + createdInvoice.getInvoiceId();
-            String subject = "Thông tin đơn hàng và khảo sát từ Long Châu";
-            String content = "Cảm ơn bạn đã mua hàng tại Long Châu!\n\nHướng dẫn sử dụng: "
-                    + (takeNote != null ? takeNote : "Không có hướng dẫn") +
-                    "\n\nVui lòng dành chút thời gian để hoàn thành khảo sát dịch vụ tại đây: " + surveyLink;
-            if (customerEmail != null && !customerEmail.isEmpty()) {
-                try {
-                    emailService.sendSimpleEmail(customerEmail, subject, content);
-                } catch (Exception e) {
-                    System.err.println("Lỗi gửi email sau khi tạo đơn hàng: " + e.getMessage());
-                }
-            }
+
+//            String customerEmail = CustomerRepository.findEmailByCustomerId(createdInvoice.getCustomerId());
+//            String takeNote = createdInvoice.getNotes(); // đợi Huy update
+//
+//            String surveyLink = "https://longchau.vn/survey?invoiceId=" + createdInvoice.getInvoiceId();
+//            String subject = "Thông tin đơn hàng và khảo sát từ Long Châu";
+//            String content = "Cảm ơn bạn đã mua hàng tại Long Châu!\n\nHướng dẫn sử dụng: "
+//                    + (takeNote != null ? takeNote : "Không có hướng dẫn") +
+//                    "\n\nVui lòng dành chút thời gian để hoàn thành khảo sát dịch vụ tại đây: " + surveyLink;
+//            if (customerEmail != null && !customerEmail.isEmpty()) {
+//                try {
+//                    emailService.sendSimpleEmail(customerEmail, subject, content);
+//                } catch (Exception e) {
+//                    System.err.println("Lỗi gửi email sau khi tạo đơn hàng: " + e.getMessage());
+//                }
+//            }
             // ==============================================================
             return ResponseEntity.ok(createdInvoice);
         } catch (RuntimeException e) {
@@ -752,5 +751,13 @@ public class EmployeeController {
             return ResponseEntity.status(500).body(errorResponse);
         }
     }
+
+    @GetMapping("/inventory")
+    public ResponseEntity<List<Inventory>> getAllInventory() {
+        List<Inventory> inventoryList = inventoryService.getAll();
+
+        return ResponseEntity.ok(inventoryList);
+    }
+
     // #endregion
 }
