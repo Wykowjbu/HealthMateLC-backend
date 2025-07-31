@@ -47,7 +47,8 @@ public class Login {
 
             if (!user.getIsActive()) {
                 response.put("success", false);
-                response.put("message", "Tài khoản của bạn đã bị khóa, vui lòng liên hệ quản trị viên để biết thêm chi tiết.");
+                response.put("message",
+                        "Tài khoản của bạn đã bị khóa, vui lòng liên hệ quản trị viên để biết thêm chi tiết.");
                 return ResponseEntity.badRequest().body(response);
             }
 
@@ -56,7 +57,6 @@ public class Login {
                 response.put("message", "Nhà thuốc của bạn hiện không hoạt động.");
                 return ResponseEntity.badRequest().body(response);
             }
-
             if (user.getPassword().equals(loginRequest.getPassword())) {
                 session.setAttribute("currentUser", user);
                 response.put("redirectUrl", redirectConfig.getRedirectUrl(user.getRole()));
@@ -99,6 +99,7 @@ public class Login {
             response.put("success", true);
             response.put("message", "Đăng xuất thành công!");
             response.put("redirectUrl", "index.html"); // Chuyển hướng về trang đăng nhập
+
 
             return ResponseEntity.ok()
                     .header("Set-Cookie", "JSESSIONID=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Domain=localhost")
