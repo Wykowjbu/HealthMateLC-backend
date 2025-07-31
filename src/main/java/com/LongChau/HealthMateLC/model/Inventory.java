@@ -15,7 +15,7 @@ public class Inventory {
     @Column(name = "ProductID")
     private Integer productId;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.EAGER)
     @MapsId
     @JoinColumn(name = "ProductID")
     private Product product;

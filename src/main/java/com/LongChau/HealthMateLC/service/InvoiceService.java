@@ -1,18 +1,9 @@
 package com.LongChau.HealthMateLC.service;
 
-import com.LongChau.HealthMateLC.model.Invoice;
-import com.LongChau.HealthMateLC.model.InvoiceDetail;
-import com.LongChau.HealthMateLC.model.User;
-import com.LongChau.HealthMateLC.model.Customer;
-import com.LongChau.HealthMateLC.model.Product;
-import com.LongChau.HealthMateLC.model.Pharmacy;
+import com.LongChau.HealthMateLC.model.*;
 import com.LongChau.HealthMateLC.dto.CreateOrderRequestDTO;
 import com.LongChau.HealthMateLC.dto.InvoiceResponseDTO;
-import com.LongChau.HealthMateLC.repository.InvoiceRepository;
-import com.LongChau.HealthMateLC.repository.UserRepository;
-import com.LongChau.HealthMateLC.repository.CustomerRepository;
-import com.LongChau.HealthMateLC.repository.ProductRepository;
-import com.LongChau.HealthMateLC.repository.InvoiceDetailRepository;
+import com.LongChau.HealthMateLC.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +27,9 @@ public class InvoiceService {
     private ProductRepository productRepository;
     @Autowired
     private InvoiceDetailRepository invoiceDetailRepository;
+
+    @Autowired
+    private LoyaltyPointRepository loyaltyPointRepository;
 
     @Autowired
     public InvoiceService(InvoiceRepository invoiceRepository) {
@@ -75,9 +69,12 @@ public class InvoiceService {
         User user = userRepository.findById(orderRequest.getEmployeeId())
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
-        // Lấy thông tin customer
-        Customer customer = customerRepository.findById(orderRequest.getCustomerId())
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
+        // Lấy thông tin customer (có thể null cho khách guest)
+        Customer customer = null;
+        if (orderRequest.getCustomerId() != null) {
+            customer = customerRepository.findById(orderRequest.getCustomerId())
+                    .orElseThrow(() -> new RuntimeException("Customer not found"));
+        }
 
         // Lấy pharmacy từ user information
         Pharmacy pharmacy = user.getUserInformation().getPharmacy();
@@ -98,6 +95,18 @@ public class InvoiceService {
 
         // Tính điểm loyalty: 1 điểm cho mỗi 10,000 VND
         Integer pointsEarned = calculateLoyaltyPoints(orderRequest.getTotalAmount());
+        // Lưu điểm loyalty chỉ khi có customer (không phải guest)
+        if (pointsEarned > 0 && customer != null) {
+            // Tạo bản ghi mới trong bảng LoyaltyPoints
+            LoyaltyPoint loyaltyPoint = new LoyaltyPoint();
+            loyaltyPoint.setCustomer(customer);
+            loyaltyPoint.setPoints(pointsEarned);
+            loyaltyPointRepository.save(loyaltyPoint);
+
+            // Cập nhật tổng điểm trong bảng Customer
+            customer.setTotalPoints(customer.getTotalPoints() + pointsEarned);
+            customerRepository.save(customer);
+        }
 
         // Tạo Invoice
         Invoice invoice = new Invoice();
@@ -108,7 +117,8 @@ public class InvoiceService {
         invoice.setTotalAmount(orderRequest.getTotalAmount());
         invoice.setPayment(orderRequest.getPaymentMethod());
         invoice.setStatus(orderRequest.getStatus() != null ? orderRequest.getStatus() : "pending");
-        invoice.setPointsEarned(pointsEarned); // Sử dụng điểm đã tính
+        invoice.setPointsEarned(customer != null ? pointsEarned : 0); // Guest không tích điểm
+        invoice.setNotes(orderRequest.getNotes());
 
         // Lưu Invoice trước để lấy ID
         Invoice savedInvoice = invoiceRepository.save(invoice);
@@ -135,6 +145,13 @@ public class InvoiceService {
         savedInvoice.setInvoiceDetails(invoiceDetails);
 
         return convertToDTO(savedInvoice);
+    }
+
+    public List<InvoiceResponseDTO> getAllInvoicesWithDetails() {
+        List<Invoice> invoices = invoiceRepository.findAll();
+        return invoices.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -180,6 +197,7 @@ public class InvoiceService {
         dto.setPointsEarned(invoice.getPointsEarned());
         dto.setPayment(invoice.getPayment());
         dto.setStatus(invoice.getStatus());
+        dto.setNotes(invoice.getNotes());  // Thêm mapping cho notes
 
         // Convert invoice details
         if (invoice.getInvoiceDetails() != null) {

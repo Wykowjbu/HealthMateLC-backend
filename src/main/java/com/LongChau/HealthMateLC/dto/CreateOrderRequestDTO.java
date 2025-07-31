@@ -11,11 +11,22 @@ public class CreateOrderRequestDTO {
     private String paymentMethod;
     private String status;
     private String invoiceDate;
+    private String notes;  // Thêm trường notes
+
 
     public CreateOrderRequestDTO() {
     }
 
     // Getters and Setters
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
     public Integer getEmployeeId() {
         return employeeId;
     }
@@ -82,6 +93,7 @@ public class CreateOrderRequestDTO {
                 ", paymentMethod='" + paymentMethod + '\'' +
                 ", status='" + status + '\'' +
                 ", invoiceDate='" + invoiceDate + '\'' +
+                ", notes='" + notes + '\'' +
                 '}';
     }
 
