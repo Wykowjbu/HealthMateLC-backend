@@ -601,7 +601,6 @@ public class EmployeeController {
         }
     }
 
-
     @GetMapping("/danh-sach-khach-hang")
     public ResponseEntity<List<Customer>> getAllCustomers() {
         List<Customer> customers = customerService.getAll();
@@ -699,7 +698,9 @@ public class EmployeeController {
             String customerEmail = customerService.getCustomerById(createdInvoice.getCustomerId()).getEmail();
             String takeNote = createdInvoice.getNotes(); // đợi Huy update
             System.out.println("Customer email: " + customerEmail);
-            String surveyLink = "https://wykowjbu.github.io/survey.html?customerId="+createdInvoice.getCustomerId()+"&pharmacyId="+ createdInvoice.getPharmacyId()+"&invoiceId=" + createdInvoice.getInvoiceId();
+            String surveyLink = "https://wykowjbu.github.io/HealthMateLC/survey.html?customerId="
+                    + createdInvoice.getCustomerId() + "&pharmacyId=" + createdInvoice.getPharmacyId() + "&invoiceId="
+                    + createdInvoice.getInvoiceId();
             String subject = "Thông tin đơn hàng và khảo sát từ Long Châu";
             String content = "Cảm ơn bạn đã mua hàng tại Long Châu!\n\nHướng dẫn sử dụng: "
                     + (takeNote != null ? takeNote : "Không có hướng dẫn") +
