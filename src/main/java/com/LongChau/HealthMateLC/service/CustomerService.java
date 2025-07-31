@@ -31,4 +31,8 @@ public class CustomerService {
     public Customer updateCustomer(Customer updatedCustomer) {
         return customerRepository.save(updatedCustomer);
     }
+
+    public Customer getCustomerById(Integer id) {
+        return customerRepository.findById(id).orElse(null);
+    }
 }
