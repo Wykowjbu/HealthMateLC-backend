@@ -37,6 +37,7 @@ public class SecurityConfig {
                 .requestMatchers("/admin/**").permitAll()
                 .requestMatchers("/customer-service/**").permitAll()
                 .requestMatchers("/manager/**").permitAll()
+                .requestMatchers("/payment/**").permitAll()
 
                 // Các request còn lại yêu cầu xác thực
                 .anyRequest().authenticated()
