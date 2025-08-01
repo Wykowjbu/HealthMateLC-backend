@@ -25,7 +25,7 @@ public class CorsConfig implements WebMvcConfigurer {
                         "http://localhost:5173",
                         "http://127.0.0.1:5500",
                         "https://wykowjbu.github.io",
-                        "http://localhost:63342")
+                        "http://localhost:63342","https://healthmate-lc-83d3cba0821e.herokuapp.com")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
                 .allowCredentials(true)
