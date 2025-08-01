@@ -34,4 +34,11 @@ public class Pharmacy {
 
     @Column(name = "IsActive")
     private Boolean isActive = true;
+
+    // THÊM 2 TRƯỜNG MỚI CHO GPS
+    @Column(name = "Latitude")
+    private Double latitude;
+
+    @Column(name = "Longitude")
+    private Double longitude;
 }

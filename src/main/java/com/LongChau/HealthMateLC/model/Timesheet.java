@@ -35,4 +35,11 @@ public class Timesheet {
 
     @Column(name = "date", nullable = false)
     private LocalDate date;
+
+    // THÊM TRƯỜNG GPS CHO CHECK-IN
+    @Column(name = "CheckinLat")
+    private Double checkinLat;
+
+    @Column(name = "CheckinLng")
+    private Double checkinLng;
 }

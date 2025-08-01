@@ -1,14 +1,10 @@
 package com.LongChau.HealthMateLC.controller;
 
+import com.LongChau.HealthMateLC.dto.*;
 import com.LongChau.HealthMateLC.repository.CustomerRepository;
-import com.LongChau.HealthMateLC.dto.ScheduleDTO;
 import com.LongChau.HealthMateLC.model.*;
 import com.LongChau.HealthMateLC.repository.TimesheetRepository;
 import com.LongChau.HealthMateLC.repository.UserRepository;
-import com.LongChau.HealthMateLC.dto.EmployeeInfoDTO;
-import com.LongChau.HealthMateLC.dto.UserHistoryDTO;
-import com.LongChau.HealthMateLC.dto.CreateOrderRequestDTO;
-import com.LongChau.HealthMateLC.dto.InvoiceResponseDTO;
 import com.LongChau.HealthMateLC.service.*;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +43,8 @@ public class EmployeeController {
     private EmailService emailService;
     @Autowired
     private WorkScheduleService workScheduleService;
+    @Autowired
+    private PharmacyService pharmacyService;
     @Autowired
     PaymentService paymentService;
 
@@ -175,6 +173,28 @@ public class EmployeeController {
     }
 
     // Đây là phương thức để check in và check out cho nhân viên
+    // API trả về vị trí nhà thuốc
+    @GetMapping("/pharmacy-location")
+    public ResponseEntity<?> getPharmacyLocation(@RequestParam Integer pharmacyId) {
+        try {
+            Optional<Pharmacy> pharmacyOpt = pharmacyService.findById(pharmacyId);
+            if (!pharmacyOpt.isPresent()) {
+                return ResponseEntity.badRequest().body("Không tìm thấy nhà thuốc");
+            }
+
+            Pharmacy pharmacy = pharmacyOpt.get();
+            if (pharmacy.getLatitude() == null || pharmacy.getLongitude() == null) {
+                return ResponseEntity.badRequest().body("Nhà thuốc chưa có thông tin vị trí GPS");
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("lat", pharmacy.getLatitude());
+            response.put("lng", pharmacy.getLongitude());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Lỗi server: " + e.getMessage());
+        }
+    }
     // ✅ FIXED: Get timesheet status by shift
     @GetMapping("/timesheet/status-by-shift")
     public ResponseEntity<?> getTimesheetStatusByShift(HttpSession session) {
@@ -309,8 +329,9 @@ public class EmployeeController {
     }
 
     // ✅ FIXED: Check-in for shift
+    // ✅ UPDATED: Check-in for shift với GPS
     @PostMapping("/timesheet/check-in-shift")
-    public ResponseEntity<?> checkInForShift(@RequestBody Map<String, Object> request, HttpSession session) {
+    public ResponseEntity<?> checkInForShift(@RequestBody CheckInGPSRequest request, HttpSession session) {
         System.out.println("DEBUG: Request to /employee/timesheet/check-in-shift at " + LocalDateTime.now());
 
         try {
@@ -331,24 +352,7 @@ public class EmployeeController {
             }
 
             Integer userId = currentUser.getUserId();
-            Integer scheduleId = null;
-
-            // Parse scheduleId from request
-            try {
-                Object scheduleIdObj = request.get("scheduleId");
-                if (scheduleIdObj instanceof Number) {
-                    scheduleId = ((Number) scheduleIdObj).intValue();
-                } else if (scheduleIdObj instanceof String) {
-                    scheduleId = Integer.parseInt((String) scheduleIdObj);
-                }
-                System.out.println("DEBUG: Parsed scheduleId: " + scheduleId);
-            } catch (Exception e) {
-                System.out.println("DEBUG: Error parsing scheduleId: " + e.getMessage());
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("error", "Invalid schedule ID");
-                errorResponse.put("message", "ID ca làm việc không hợp lệ: " + e.getMessage());
-                return ResponseEntity.status(400).body(errorResponse);
-            }
+            Integer scheduleId = request.getScheduleId();
 
             if (scheduleId == null) {
                 Map<String, Object> errorResponse = new HashMap<>();
@@ -357,17 +361,69 @@ public class EmployeeController {
                 return ResponseEntity.status(400).body(errorResponse);
             }
 
+            // KIỂM TRA GPS (nếu có)
+            if (request.getLat() != null && request.getLng() != null) {
+                try {
+                    // Lấy pharmacyId từ user
+                    UserInformation userInfo = userInformationService.findUserInformationByUserId(userId);
+                    if (userInfo == null || userInfo.getPharmacy() == null) {
+                        Map<String, Object> errorResponse = new HashMap<>();
+                        errorResponse.put("error", "No pharmacy assigned");
+                        errorResponse.put("message", "Bạn chưa được gán cho nhà thuốc nào");
+                        return ResponseEntity.status(400).body(errorResponse);
+                    }
+
+                    Integer pharmacyId = userInfo.getPharmacy().getPharmacyId();
+                    Optional<Pharmacy> pharmacyOpt = pharmacyService.findById(pharmacyId);
+
+                    if (!pharmacyOpt.isPresent()) {
+                        Map<String, Object> errorResponse = new HashMap<>();
+                        errorResponse.put("error", "Pharmacy not found");
+                        errorResponse.put("message", "Không tìm thấy thông tin nhà thuốc");
+                        return ResponseEntity.status(400).body(errorResponse);
+                    }
+
+                    Pharmacy pharmacy = pharmacyOpt.get();
+                    if (pharmacy.getLatitude() == null || pharmacy.getLongitude() == null) {
+                        Map<String, Object> errorResponse = new HashMap<>();
+                        errorResponse.put("error", "No GPS data");
+                        errorResponse.put("message", "Nhà thuốc chưa có thông tin GPS, vui lòng liên hệ quản lý");
+                        return ResponseEntity.status(400).body(errorResponse);
+                    }
+
+                    // Tính khoảng cách
+                    double distance = haversine(request.getLat(), request.getLng(),
+                            pharmacy.getLatitude(), pharmacy.getLongitude());
+
+                    int allowedDistance = 200; // 200 mét
+                    if (distance > allowedDistance) {
+                        Map<String, Object> errorResponse = new HashMap<>();
+                        errorResponse.put("error", "Location too far");
+                        errorResponse.put("message", "Bạn đang cách nhà thuốc " + Math.round(distance) + "m. Không thể check-in!");
+                        errorResponse.put("distance", Math.round(distance));
+                        errorResponse.put("allowedDistance", allowedDistance);
+                        return ResponseEntity.status(400).body(errorResponse);
+                    }
+
+                } catch (Exception e) {
+                    System.out.println("DEBUG: Error checking GPS: " + e.getMessage());
+                    Map<String, Object> errorResponse = new HashMap<>();
+                    errorResponse.put("error", "GPS check failed");
+                    errorResponse.put("message", "Lỗi kiểm tra vị trí GPS: " + e.getMessage());
+                    return ResponseEntity.status(500).body(errorResponse);
+                }
+            }
+
             LocalDate today = LocalDate.now();
             LocalTime now = LocalDateTime.now().toLocalTime();
 
             // Get schedule information
-            Integer finalScheduleId = scheduleId;
             Optional<ScheduleDTO> scheduleOpt = workScheduleService.getSchedulesForEmployee(userId)
                     .stream()
                     .filter(s -> {
                         try {
                             return LocalDate.parse(s.getDate()).equals(today) &&
-                                    s.getScheduleId().equals(finalScheduleId);
+                                    s.getScheduleId().equals(scheduleId);
                         } catch (Exception e) {
                             System.out.println("DEBUG: Error filtering schedule: " + e.getMessage());
                             return false;
@@ -411,13 +467,10 @@ public class EmployeeController {
                 return ResponseEntity.status(400).body(errorResponse);
             }
 
-            // ✅ FIXED: Check if already checked in for this specific shift
-            // ✅ FIXED: Convert LocalTime to String for SQL Server
-            // Thay thế dòng này:
+            // Check if already checked in for this specific shift
             String startTimeStr = allowedCheckInStart.toString();
             String endTimeStr = allowedCheckInEnd.toString();
 
-            // ✅ FIXED: Use count method instead of boolean method
             Integer existingCount = timesheetRepository.countByUserIdDateAndCheckinRange(
                     userId, today, startTimeStr, endTimeStr);
             boolean alreadyCheckedIn = existingCount != null && existingCount > 0;
@@ -452,6 +505,12 @@ public class EmployeeController {
             timesheet.setCheckin(now);
             timesheet.setDate(today);
 
+            // LƯU GPS VỊ TRÍ CHECK-IN
+            if (request.getLat() != null && request.getLng() != null) {
+                timesheet.setCheckinLat(request.getLat());
+                timesheet.setCheckinLng(request.getLng());
+            }
+
             // Save timesheet
             timesheetRepository.save(timesheet);
             System.out.println("DEBUG: Check-in saved successfully for user: " + userId + ", shift: " + scheduleId);
@@ -461,6 +520,9 @@ public class EmployeeController {
                     "Check-in thành công cho ca " + schedule.getStartTime() + " - " + schedule.getEndTime());
             response.put("checkInTime", now.toString());
             response.put("scheduleId", scheduleId);
+            if (request.getLat() != null && request.getLng() != null) {
+                response.put("gpsVerified", true);
+            }
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
@@ -471,6 +533,18 @@ public class EmployeeController {
             errorResponse.put("message", "Lỗi máy chủ: " + e.getMessage());
             return ResponseEntity.status(500).body(errorResponse);
         }
+    }
+
+    // Thêm hàm tính khoảng cách Haversine
+    private double haversine(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371000; // mét
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(dLon/2) * Math.sin(dLon/2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
     }
 
     // ✅ FIXED: Check-out for shift
