@@ -44,9 +44,8 @@ public class EmployeeController {
     @Autowired
     private WorkScheduleService workScheduleService;
     @Autowired
-
-
-  PaymentService paymentService;
+  private PaymentService paymentService;
+    @Autowired
   private PharmacyService pharmacyService;
     @Autowired
     private InventoryService inventoryService;
