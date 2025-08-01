@@ -20,6 +20,7 @@ public class PaymentController {
 
     @PostMapping("update-status")
     public ResponseEntity<?> put(@RequestBody PaymentData paymentData) {
+        System.out.println("pamentdata " +paymentData.toString());
         invoiceService.updatePaymentStatus(paymentData.orderCode, paymentData.getStatus());
         return  ResponseEntity.ok(Map.of("message", "Payment status updated successfully"));
     }
