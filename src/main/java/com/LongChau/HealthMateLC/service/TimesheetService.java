@@ -12,6 +12,11 @@ import java.time.LocalTime;
 
 @Service
 public class TimesheetService {
+    @Autowired
+    private PharmacyService pharmacyService; // Thêm này nếu cần
+
+    @Autowired
+    private UserService userService;
 
     @Autowired
     private TimesheetRepository timesheetRepository;
