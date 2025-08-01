@@ -17,7 +17,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authorize -> authorize
                 // Cho phép các endpoint của servey
-                .requestMatchers("/", "/survey.html").permitAll()
+                .requestMatchers("/survey", "/survey/**").permitAll()
                 // Cho phép các endpoint authentication
                 .requestMatchers("/api/auth/**").permitAll()
 
