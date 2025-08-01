@@ -221,4 +221,14 @@ public class InvoiceService {
 
         return dto;
     }
+
+    public void updatePaymentStatus(Integer orderCode, String status) {
+        Invoice invoice = invoiceRepository.findByOrderCode(orderCode);
+        if (invoice!=null){
+            invoice.setStatus(status);
+            invoiceRepository.save(invoice);
+        } else {
+            throw new RuntimeException("Invoice not found for order code: " + orderCode);
+        }
+    }
 }

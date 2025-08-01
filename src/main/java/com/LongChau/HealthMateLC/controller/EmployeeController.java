@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vn.payos.type.CheckoutResponseData;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -43,8 +44,10 @@ public class EmployeeController {
     @Autowired
     private WorkScheduleService workScheduleService;
     @Autowired
-    private PharmacyService pharmacyService;
 
+
+  PaymentService paymentService;
+  private PharmacyService pharmacyService;
     @Autowired
     private InventoryService inventoryService;
 
@@ -787,7 +790,14 @@ public class EmployeeController {
                 }
             }
             // ==============================================================
-            return ResponseEntity.ok(createdInvoice);
+            if (orderRequest.getPaymentMethod().equals("Chuyển khoản")) {
+                CheckoutResponseData response = paymentService.createPaymentLink(createdInvoice);
+                return ResponseEntity.ok(Map.of(
+                        "status", "redirect",
+                        "response", response
+                ));
+            }
+            return ResponseEntity.ok(Map.of("status", "success"));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body("Error creating order123: " + e.getMessage());
         } catch (Exception e) {
